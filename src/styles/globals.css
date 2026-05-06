@@ -1,0 +1,228 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─────────────────────────────────────────────────────────────
+   Design tokens — warm, low-contrast, reading-optimized.
+   Inspired by Claude Desktop's spacious, calm aesthetic.
+   ───────────────────────────────────────────────────────────── */
+
+@layer base {
+  :root {
+    /* Light theme — warm off-white, not pure */
+    --bg: 250 248 244;          /* #FAF8F4 — warm canvas */
+    --surface: 245 242 236;     /* #F5F2EC — sidebars, panels */
+    --elevated: 255 254 251;    /* #FFFEFB — cards, dialogs */
+    --border: 230 225 215;      /* #E6E1D7 — hairline dividers */
+    --text: 38 36 32;           /* #262420 — body text */
+    --muted: 110 105 95;        /* #6E695F — secondary text */
+    --subtle: 165 158 145;      /* #A59E91 — tertiary text */
+    --accent: 199 109 70;       /* #C76D46 — Claude-ish terracotta */
+    --accent-hover: 178 92 56;  /* #B25C38 */
+  }
+
+  .dark {
+    /* Dark theme — warm dark, not slate-blue */
+    --bg: 28 27 25;             /* #1C1B19 — warm near-black */
+    --surface: 36 34 31;        /* #24221F — panels */
+    --elevated: 45 42 38;       /* #2D2A26 — cards */
+    --border: 58 54 48;         /* #3A3630 — dividers */
+    --text: 235 230 220;        /* #EBE6DC — body text */
+    --muted: 165 158 145;       /* #A59E91 — secondary */
+    --subtle: 115 109 100;      /* #736D64 — tertiary */
+    --accent: 217 130 92;       /* #D9825C — slightly lighter on dark */
+    --accent-hover: 230 145 105; /* #E69169 */
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    @apply bg-bg text-text antialiased;
+    font-feature-settings: 'cv11', 'ss01', 'ss03';
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Scrollbar styling — thin, unobtrusive */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: rgb(var(--border));
+    border-radius: 5px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgb(var(--subtle));
+    background-clip: content-box;
+    border: 2px solid transparent;
+  }
+
+  /* Focus ring */
+  :focus-visible {
+    outline: 2px solid rgb(var(--accent));
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Prose styles for rendered markdown.
+   Used by <Renderer /> via the .prose-reader class.
+   ───────────────────────────────────────────────────────────── */
+
+@layer components {
+  .prose-reader {
+    @apply font-serif text-reader-base text-text;
+    max-width: 100%;
+  }
+
+  .prose-reader h1,
+  .prose-reader h2,
+  .prose-reader h3,
+  .prose-reader h4,
+  .prose-reader h5,
+  .prose-reader h6 {
+    @apply font-sans font-semibold tracking-tight text-text;
+    margin-top: 2em;
+    margin-bottom: 0.6em;
+    line-height: 1.25;
+  }
+
+  .prose-reader h1 {
+    @apply text-[2em];
+    margin-top: 0.5em;
+    letter-spacing: -0.02em;
+  }
+  .prose-reader h2 {
+    @apply text-[1.5em];
+    letter-spacing: -0.015em;
+  }
+  .prose-reader h3 {
+    @apply text-[1.25em];
+  }
+  .prose-reader h4 {
+    @apply text-[1.1em];
+  }
+
+  .prose-reader p {
+    margin: 1em 0;
+  }
+
+  .prose-reader a {
+    @apply text-accent underline decoration-accent/30 underline-offset-2;
+    transition: all 150ms ease;
+  }
+  .prose-reader a:hover {
+    @apply decoration-accent;
+  }
+
+  .prose-reader strong {
+    @apply font-semibold text-text;
+  }
+
+  .prose-reader em {
+    @apply italic;
+  }
+
+  .prose-reader code {
+    @apply font-mono text-[0.88em] bg-surface px-[0.35em] py-[0.15em] rounded-md text-text;
+    border: 1px solid rgb(var(--border));
+  }
+
+  .prose-reader pre {
+    @apply font-mono text-[0.88em] bg-surface p-4 rounded-lg overflow-x-auto my-5;
+    border: 1px solid rgb(var(--border));
+    line-height: 1.6;
+  }
+
+  .prose-reader pre code {
+    @apply bg-transparent p-0 border-0 text-text;
+    font-size: inherit;
+  }
+
+  .prose-reader blockquote {
+    @apply border-l-2 border-accent/40 pl-4 italic text-muted my-5;
+  }
+
+  .prose-reader ul,
+  .prose-reader ol {
+    margin: 1em 0;
+    padding-left: 1.5em;
+  }
+
+  .prose-reader ul {
+    list-style-type: disc;
+  }
+  .prose-reader ol {
+    list-style-type: decimal;
+  }
+
+  .prose-reader li {
+    margin: 0.4em 0;
+  }
+
+  .prose-reader li > ul,
+  .prose-reader li > ol {
+    margin: 0.4em 0;
+  }
+
+  /* Task list (GFM) */
+  .prose-reader .task-list-item {
+    list-style: none;
+    margin-left: -1.5em;
+  }
+  .prose-reader .task-list-item input[type='checkbox'] {
+    @apply mr-2 accent-accent;
+  }
+
+  .prose-reader hr {
+    @apply border-0 border-t border-border my-8;
+  }
+
+  .prose-reader table {
+    @apply w-full my-5 text-[0.95em];
+    border-collapse: collapse;
+  }
+
+  .prose-reader th,
+  .prose-reader td {
+    @apply border border-border px-3 py-2 text-left;
+  }
+
+  .prose-reader th {
+    @apply bg-surface font-semibold;
+  }
+
+  .prose-reader img {
+    @apply max-w-full rounded-lg my-4;
+  }
+
+  /* Heading anchor (from markdown-it-anchor) */
+  .prose-reader .heading-anchor {
+    @apply opacity-0 ml-2 text-muted no-underline transition-opacity;
+  }
+  .prose-reader h1:hover .heading-anchor,
+  .prose-reader h2:hover .heading-anchor,
+  .prose-reader h3:hover .heading-anchor,
+  .prose-reader h4:hover .heading-anchor {
+    @apply opacity-60;
+  }
+}
