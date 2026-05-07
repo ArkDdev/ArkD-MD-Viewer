@@ -5,6 +5,7 @@ import { history, historyKeymap, defaultKeymap } from '@codemirror/commands';
 import { searchKeymap } from '@codemirror/search';
 import { markdown } from '@codemirror/lang-markdown';
 import { syntaxHighlighting, HighlightStyle } from '@codemirror/language';
+import { closeBrackets, closeBracketsKeymap } from '@codemirror/autocomplete';
 import { tags as t } from '@lezer/highlight';
 import { useFileStore } from '@/store/fileStore';
 import { useUIStore } from '@/store/uiStore';
@@ -61,53 +62,55 @@ const darkHighlight = HighlightStyle.define([
   { tag: t.comment, color: '#807766', fontStyle: 'italic' },
 ]);
 
-const baseTheme = EditorView.theme({
-  '&': {
-    height: '100%',
-    fontSize: '14px',
-    backgroundColor: 'rgb(var(--bg))',
-    color: 'rgb(var(--text))',
-  },
-  '&.cm-focused': {
-    outline: 'none !important',
-  },
-  '.cm-content': {
-    outline: 'none !important',
-    fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
-    padding: '16px 0',
-    caretColor: 'rgb(var(--accent))',
-  },
-  '.cm-scroller': {
-    overflow: 'auto',
-    outline: 'none !important',
-  },
-  '.cm-editor': {
-    outline: 'none !important',
-  },
-  '.cm-editor.cm-focused': {
-    outline: 'none !important',
-  },
-  '.cm-gutters': {
-    backgroundColor: 'rgb(var(--bg))',
-    color: 'rgb(var(--subtle))',
-    border: 'none',
-    paddingRight: '8px',
-  },
-  '.cm-activeLine': {
-    backgroundColor: 'rgb(var(--surface) / 0.5)',
-  },
-  '.cm-activeLineGutter': {
-    backgroundColor: 'transparent',
-    color: 'rgb(var(--muted))',
-  },
-  '.cm-cursor': {
-    borderLeftColor: 'rgb(var(--accent))',
-    borderLeftWidth: '2px',
-  },
-  '.cm-selectionBackground, ::selection': {
-    backgroundColor: 'rgb(var(--accent) / 0.18) !important',
-  },
-});
+/**
+ * Build the base theme with a dynamic font size.
+ * We rebuild the EditorView.theme each time editorFontSize changes
+ * via a Compartment so it's hot-swappable without losing state.
+ */
+function buildBaseTheme(fontSize: number) {
+  return EditorView.theme({
+    '&': {
+      height: '100%',
+      fontSize: `${fontSize}px`,
+      backgroundColor: 'rgb(var(--bg))',
+      color: 'rgb(var(--text))',
+    },
+    '&.cm-focused': { outline: 'none !important' },
+    '.cm-content': {
+      outline: 'none !important',
+      fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
+      padding: '16px 0',
+      caretColor: 'rgb(var(--accent))',
+    },
+    '.cm-scroller': {
+      overflow: 'auto',
+      outline: 'none !important',
+      fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
+    },
+    '.cm-editor': { outline: 'none !important' },
+    '.cm-editor.cm-focused': { outline: 'none !important' },
+    '.cm-gutters': {
+      backgroundColor: 'rgb(var(--bg))',
+      color: 'rgb(var(--subtle))',
+      border: 'none',
+      paddingRight: '8px',
+    },
+    '.cm-activeLine': {
+      backgroundColor: 'rgb(var(--surface) / 0.5)',
+    },
+    '.cm-activeLineGutter': {
+      backgroundColor: 'transparent',
+      color: 'rgb(var(--muted))',
+    },
+    '.cm-cursor': {
+      borderLeftColor: 'rgb(var(--accent))',
+      borderLeftWidth: '2px',
+    },
+    '.cm-selectionBackground, ::selection': {
+      backgroundColor: 'rgb(var(--accent) / 0.18) !important',
+    },
+  });
+}
 
 export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
   { showPaneToggle, isFull },
@@ -115,10 +118,18 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
 ) {
   const hostRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
+
+  // Compartments allow hot-swapping configs without rebuilding the editor
   const highlightCompartment = useRef(new Compartment());
+  const themeCompartment = useRef(new Compartment());
+  const wrapCompartment = useRef(new Compartment());
+
   const initialContent = useFileStore.getState().content;
 
   const themeOverride = useUIStore((s) => s.themeOverride);
+  const editorFontSize = useUIStore((s) => s.editorFontSize);
+  const editorWrap = useUIStore((s) => s.editorWrap);
+
   const [systemDark, setSystemDark] = useState(
     () => window.matchMedia('(prefers-color-scheme: dark)').matches,
   );
@@ -152,41 +163,31 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
         lineNumbers(),
         highlightActiveLine(),
         markdown(),
+        closeBrackets(),
         highlightCompartment.current.of(syntaxHighlighting(initialHighlight)),
-        keymap.of([...defaultKeymap, ...historyKeymap, ...searchKeymap]),
-        EditorView.lineWrapping,
+        themeCompartment.current.of(buildBaseTheme(editorFontSize)),
+        wrapCompartment.current.of(editorWrap ? EditorView.lineWrapping : []),
+        keymap.of([
+          ...closeBracketsKeymap,
+          ...defaultKeymap,
+          ...historyKeymap,
+          ...searchKeymap,
+        ]),
         EditorView.updateListener.of((update) => {
           if (update.docChanged) {
             useFileStore.getState().setContent(update.state.doc.toString());
           }
         }),
-        baseTheme,
       ],
     });
 
     const view = new EditorView({ state, parent: hostRef.current });
     viewRef.current = view;
 
-    /*
-     * Sync editor with external store changes.
-     *
-     * Two cases trigger a doc replacement:
-     *
-     *   1. filePath changed → user opened a different file
-     *      Replace the entire doc and place cursor at start.
-     *
-     *   2. content changed in store but NOT via the editor itself.
-     *      Detected by comparing store.content to the editor's current text.
-     *      If they differ, an external source updated the store (file watcher,
-     *      "Reload" from conflict banner, etc.) and we need to mirror it.
-     *      If they match, the change came from the editor's own update listener
-     *      (typing) and there's nothing to do — no infinite loop.
-     */
     const unsub = useFileStore.subscribe((s, prev) => {
       const view = viewRef.current;
       if (!view) return;
 
-      // Case 1: file changed
       if (s.filePath !== prev.filePath) {
         view.dispatch({
           changes: { from: 0, to: view.state.doc.length, insert: s.content },
@@ -195,10 +196,8 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
         return;
       }
 
-      // Case 2: content changed externally (store ≠ editor)
       const editorContent = view.state.doc.toString();
       if (s.content !== editorContent) {
-        // Preserve cursor position as best we can — clamp to new length
         const oldAnchor = view.state.selection.main.anchor;
         const newAnchor = Math.min(oldAnchor, s.content.length);
         view.dispatch({
@@ -216,6 +215,7 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // React to theme changes
   useEffect(() => {
     if (!viewRef.current) return;
     viewRef.current.dispatch({
@@ -224,6 +224,24 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
       ),
     });
   }, [isDark]);
+
+  // React to font-size changes
+  useEffect(() => {
+    if (!viewRef.current) return;
+    viewRef.current.dispatch({
+      effects: themeCompartment.current.reconfigure(buildBaseTheme(editorFontSize)),
+    });
+  }, [editorFontSize]);
+
+  // React to wrap toggle
+  useEffect(() => {
+    if (!viewRef.current) return;
+    viewRef.current.dispatch({
+      effects: wrapCompartment.current.reconfigure(
+        editorWrap ? EditorView.lineWrapping : [],
+      ),
+    });
+  }, [editorWrap]);
 
   return (
     <div className="flex h-full flex-col">

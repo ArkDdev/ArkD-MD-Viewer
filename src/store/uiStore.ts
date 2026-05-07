@@ -2,25 +2,30 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
 export type ViewMode = 'view' | 'edit' | 'edit-full';
-export type FontSize = 'sm' | 'base' | 'lg' | 'xl';
-
-/**
- * Theme model:
- * - `themeOverride === null` → follow OS theme (default for first launch)
- * - `themeOverride === 'light' | 'dark'` → user explicitly chose
- *
- * UI exposes only two buttons: light and dark. Clicking one sets the override.
- * If the user wants "system" again, they'd need a way to clear the override —
- * we don't expose that as a button (Claude Desktop also doesn't), but it's
- * available via `clearThemeOverride()` if we ever want a setting for it.
- */
 export type ThemeOverride = 'light' | 'dark' | null;
+
+/* ─── Display preferences ────────────────────────────────────── */
+
+export type ReaderFontFamily = 'serif' | 'sans' | 'mono';
+export type ReaderFontSize = 'sm' | 'base' | 'lg' | 'xl';
+export type ReaderLineHeight = 'compact' | 'normal' | 'relaxed';
+export type ReaderWidth = 'narrow' | 'medium' | 'wide' | 'full';
+
+export type EditorFontSize = 12 | 14 | 16 | 18;
 
 interface UIState {
   mode: ViewMode;
   themeOverride: ThemeOverride;
-  fontSize: FontSize;
-  readerWidth: 'narrow' | 'wide';
+
+  // Reader (preview) prefs
+  readerFontFamily: ReaderFontFamily;
+  readerFontSize: ReaderFontSize;
+  readerLineHeight: ReaderLineHeight;
+  readerWidth: ReaderWidth;
+
+  // Editor prefs
+  editorFontSize: EditorFontSize;
+  editorWrap: boolean;
 
   isSettingsOpen: boolean;
   isDisplayOpen: boolean;
@@ -32,8 +37,16 @@ interface UIState {
   setTheme: (theme: 'light' | 'dark') => void;
   clearThemeOverride: () => void;
 
-  setFontSize: (size: FontSize) => void;
-  setReaderWidth: (w: 'narrow' | 'wide') => void;
+  setReaderFontFamily: (f: ReaderFontFamily) => void;
+  setReaderFontSize: (s: ReaderFontSize) => void;
+  setReaderLineHeight: (h: ReaderLineHeight) => void;
+  setReaderWidth: (w: ReaderWidth) => void;
+
+  setEditorFontSize: (s: EditorFontSize) => void;
+  setEditorWrap: (w: boolean) => void;
+
+  /** Reset all display preferences to defaults */
+  resetDisplay: () => void;
 
   openSettings: () => void;
   closeSettings: () => void;
@@ -49,18 +62,25 @@ function applyTheme(theme: 'light' | 'dark') {
   document.documentElement.classList.toggle('dark', theme === 'dark');
 }
 
-/** Returns the currently applied theme based on override + system. */
 export function resolveTheme(override: ThemeOverride): 'light' | 'dark' {
   return override ?? systemTheme();
 }
+
+const DEFAULTS = {
+  readerFontFamily: 'serif' as ReaderFontFamily,
+  readerFontSize: 'base' as ReaderFontSize,
+  readerLineHeight: 'normal' as ReaderLineHeight,
+  readerWidth: 'narrow' as ReaderWidth,
+  editorFontSize: 14 as EditorFontSize,
+  editorWrap: true,
+};
 
 export const useUIStore = create<UIState>()(
   persist(
     (set, get) => ({
       mode: 'view',
       themeOverride: null,
-      fontSize: 'base',
-      readerWidth: 'narrow',
+      ...DEFAULTS,
 
       isSettingsOpen: false,
       isDisplayOpen: false,
@@ -88,8 +108,15 @@ export const useUIStore = create<UIState>()(
         set({ themeOverride: null });
       },
 
-      setFontSize: (fontSize) => set({ fontSize }),
+      setReaderFontFamily: (readerFontFamily) => set({ readerFontFamily }),
+      setReaderFontSize: (readerFontSize) => set({ readerFontSize }),
+      setReaderLineHeight: (readerLineHeight) => set({ readerLineHeight }),
       setReaderWidth: (readerWidth) => set({ readerWidth }),
+
+      setEditorFontSize: (editorFontSize) => set({ editorFontSize }),
+      setEditorWrap: (editorWrap) => set({ editorWrap }),
+
+      resetDisplay: () => set({ ...DEFAULTS }),
 
       openSettings: () => set({ isSettingsOpen: true }),
       closeSettings: () => set({ isSettingsOpen: false }),
@@ -101,31 +128,27 @@ export const useUIStore = create<UIState>()(
       partialize: (state) => ({
         mode: state.mode,
         themeOverride: state.themeOverride,
-        fontSize: state.fontSize,
+        readerFontFamily: state.readerFontFamily,
+        readerFontSize: state.readerFontSize,
+        readerLineHeight: state.readerLineHeight,
         readerWidth: state.readerWidth,
+        editorFontSize: state.editorFontSize,
+        editorWrap: state.editorWrap,
       }),
     },
   ),
 );
 
-/**
- * Initialise theme on app startup. Call once from main.tsx after the store
- * has been hydrated. Sets up a listener so that when the user has no override
- * and changes the OS theme, the app follows.
- */
 export function initThemeWatcher() {
-  // Apply current effective theme
   const override = useUIStore.getState().themeOverride;
   applyTheme(resolveTheme(override));
 
-  // Watch system changes, applying them only when user has no override
   const mq = window.matchMedia('(prefers-color-scheme: dark)');
   const onChange = (e: MediaQueryListEvent) => {
     if (useUIStore.getState().themeOverride === null) {
       applyTheme(e.matches ? 'dark' : 'light');
     }
   };
-  // Modern browsers
   mq.addEventListener('change', onChange);
   return () => mq.removeEventListener('change', onChange);
 }

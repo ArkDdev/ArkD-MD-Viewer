@@ -6,7 +6,6 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Warm neutrals (Claude Desktop inspired)
         bg: 'rgb(var(--bg) / <alpha-value>)',
         surface: 'rgb(var(--surface) / <alpha-value>)',
         elevated: 'rgb(var(--elevated) / <alpha-value>)',
@@ -43,18 +42,18 @@ export default {
         ],
       },
       fontSize: {
-        // Reading-optimized scale
-        'reader-sm': ['15px', { lineHeight: '1.7' }],
-        'reader-base': ['17px', { lineHeight: '1.7' }],
-        'reader-lg': ['19px', { lineHeight: '1.75' }],
-        'reader-xl': ['21px', { lineHeight: '1.75' }],
+        // Reader scale — applied with custom line-height in component
+        'reader-sm': '15px',
+        'reader-base': '17px',
+        'reader-lg': '19px',
+        'reader-xl': '21px',
       },
       maxWidth: {
-        reader: '720px',
-        'reader-wide': '860px',
+        'reader-narrow': '720px',
+        'reader-medium': '860px',
+        'reader-wide': '1040px',
       },
       boxShadow: {
-        // Soft, warm shadows
         soft: '0 1px 2px 0 rgb(0 0 0 / 0.04), 0 1px 3px 0 rgb(0 0 0 / 0.06)',
         elevated: '0 4px 12px -2px rgb(0 0 0 / 0.08), 0 2px 6px -1px rgb(0 0 0 / 0.04)',
       },

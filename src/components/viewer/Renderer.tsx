@@ -8,10 +8,8 @@ interface RendererProps {
   onScroll?: (e: UIEvent<HTMLDivElement>) => void;
 }
 
-/** Friendly display name for a language id used in the corner label. */
 function displayLang(lang: string | undefined): string | null {
   if (!lang || lang === 'text' || lang === 'plain') return null;
-  // Keep simple: lowercase as-is, but rename a few common ones for prettiness
   const aliases: Record<string, string> = {
     js: 'javascript',
     ts: 'typescript',
@@ -23,9 +21,41 @@ function displayLang(lang: string | undefined): string | null {
   return aliases[lang.toLowerCase()] ?? lang.toLowerCase();
 }
 
+const FONT_FAMILY_CLASS = {
+  serif: 'font-serif',
+  sans: 'font-sans',
+  mono: 'font-mono',
+} as const;
+
+const FONT_SIZE_CLASS = {
+  sm: 'text-reader-sm',
+  base: 'text-reader-base',
+  lg: 'text-reader-lg',
+  xl: 'text-reader-xl',
+} as const;
+
+const LINE_HEIGHT_VALUE = {
+  compact: '1.5',
+  normal: '1.7',
+  relaxed: '1.9',
+} as const;
+
+const WIDTH_CLASS = {
+  narrow: 'max-w-reader-narrow',
+  medium: 'max-w-reader-medium',
+  wide: 'max-w-reader-wide',
+  full: 'max-w-full',
+} as const;
+
 export const Renderer = forwardRef<HTMLDivElement, RendererProps>(
   function Renderer({ source, onScroll }, ref) {
-    const { fontSize, readerWidth, themeOverride } = useUIStore();
+    const {
+      readerFontFamily,
+      readerFontSize,
+      readerLineHeight,
+      readerWidth,
+      themeOverride,
+    } = useUIStore();
     const articleRef = useRef<HTMLElement>(null);
     const theme = resolveTheme(themeOverride);
 
@@ -61,7 +91,6 @@ export const Renderer = forwardRef<HTMLDivElement, RendererProps>(
           const oldPre = codeEl.parentElement;
           if (!oldPre) return;
 
-          // Build the wrapper: <div class="code-block">[<div class="code-block-lang">lang</div>]<pre>...</pre></div>
           const wrapper = document.createElement('div');
           wrapper.className = 'code-block';
 
@@ -73,7 +102,6 @@ export const Renderer = forwardRef<HTMLDivElement, RendererProps>(
             wrapper.appendChild(langLabel);
           }
 
-          // Parse Shiki's highlighted HTML into the new <pre>
           const tmp = document.createElement('div');
           tmp.innerHTML = highlighted;
           const newPre = tmp.firstElementChild;
@@ -91,21 +119,18 @@ export const Renderer = forwardRef<HTMLDivElement, RendererProps>(
       };
     }, [html, effectiveDark]);
 
-    const fontClass = {
-      sm: 'text-reader-sm',
-      base: 'text-reader-base',
-      lg: 'text-reader-lg',
-      xl: 'text-reader-xl',
-    }[fontSize];
-
-    const widthClass = readerWidth === 'narrow' ? 'max-w-reader' : 'max-w-reader-wide';
+    const fontFamilyClass = FONT_FAMILY_CLASS[readerFontFamily];
+    const fontSizeClass = FONT_SIZE_CLASS[readerFontSize];
+    const lineHeightValue = LINE_HEIGHT_VALUE[readerLineHeight];
+    const widthClass = WIDTH_CLASS[readerWidth];
 
     return (
       <div ref={ref} onScroll={onScroll} className="h-full overflow-y-auto">
         <article
           key={theme}
           ref={articleRef}
-          className={`prose-reader mx-auto ${fontClass} ${widthClass} px-8 py-12`}
+          className={`prose-reader mx-auto px-8 py-12 ${fontFamilyClass} ${fontSizeClass} ${widthClass}`}
+          style={{ '--reader-line-height': lineHeightValue } as React.CSSProperties}
           dangerouslySetInnerHTML={{ __html: html }}
         />
       </div>
