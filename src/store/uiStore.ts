@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { detectSystemLanguage, type Language } from '@/lib/i18n/translations';
 
 export type ViewMode = 'view' | 'edit' | 'edit-full';
 export type ThemeOverride = 'light' | 'dark' | null;
@@ -16,14 +17,13 @@ export type EditorFontSize = 12 | 14 | 16 | 18;
 interface UIState {
   mode: ViewMode;
   themeOverride: ThemeOverride;
+  language: Language;
 
-  // Reader (preview) prefs
   readerFontFamily: ReaderFontFamily;
   readerFontSize: ReaderFontSize;
   readerLineHeight: ReaderLineHeight;
   readerWidth: ReaderWidth;
 
-  // Editor prefs
   editorFontSize: EditorFontSize;
   editorWrap: boolean;
 
@@ -37,6 +37,8 @@ interface UIState {
   setTheme: (theme: 'light' | 'dark') => void;
   clearThemeOverride: () => void;
 
+  setLanguage: (lang: Language) => void;
+
   setReaderFontFamily: (f: ReaderFontFamily) => void;
   setReaderFontSize: (s: ReaderFontSize) => void;
   setReaderLineHeight: (h: ReaderLineHeight) => void;
@@ -45,7 +47,6 @@ interface UIState {
   setEditorFontSize: (s: EditorFontSize) => void;
   setEditorWrap: (w: boolean) => void;
 
-  /** Reset all display preferences to defaults */
   resetDisplay: () => void;
 
   openSettings: () => void;
@@ -66,7 +67,7 @@ export function resolveTheme(override: ThemeOverride): 'light' | 'dark' {
   return override ?? systemTheme();
 }
 
-const DEFAULTS = {
+const DISPLAY_DEFAULTS = {
   readerFontFamily: 'serif' as ReaderFontFamily,
   readerFontSize: 'base' as ReaderFontSize,
   readerLineHeight: 'normal' as ReaderLineHeight,
@@ -80,7 +81,9 @@ export const useUIStore = create<UIState>()(
     (set, get) => ({
       mode: 'view',
       themeOverride: null,
-      ...DEFAULTS,
+      // Initial language detection happens once when persisted state has none
+      language: detectSystemLanguage(),
+      ...DISPLAY_DEFAULTS,
 
       isSettingsOpen: false,
       isDisplayOpen: false,
@@ -108,6 +111,8 @@ export const useUIStore = create<UIState>()(
         set({ themeOverride: null });
       },
 
+      setLanguage: (language) => set({ language }),
+
       setReaderFontFamily: (readerFontFamily) => set({ readerFontFamily }),
       setReaderFontSize: (readerFontSize) => set({ readerFontSize }),
       setReaderLineHeight: (readerLineHeight) => set({ readerLineHeight }),
@@ -116,7 +121,7 @@ export const useUIStore = create<UIState>()(
       setEditorFontSize: (editorFontSize) => set({ editorFontSize }),
       setEditorWrap: (editorWrap) => set({ editorWrap }),
 
-      resetDisplay: () => set({ ...DEFAULTS }),
+      resetDisplay: () => set({ ...DISPLAY_DEFAULTS }),
 
       openSettings: () => set({ isSettingsOpen: true }),
       closeSettings: () => set({ isSettingsOpen: false }),
@@ -128,6 +133,7 @@ export const useUIStore = create<UIState>()(
       partialize: (state) => ({
         mode: state.mode,
         themeOverride: state.themeOverride,
+        language: state.language,
         readerFontFamily: state.readerFontFamily,
         readerFontSize: state.readerFontSize,
         readerLineHeight: state.readerLineHeight,

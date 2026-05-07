@@ -7,6 +7,7 @@ import {
   type ReaderWidth,
   type EditorFontSize,
 } from '@/store/uiStore';
+import { useT } from '@/lib/i18n/useT';
 
 export function DisplayModal() {
   const {
@@ -26,13 +27,13 @@ export function DisplayModal() {
     setEditorWrap,
     resetDisplay,
   } = useUIStore();
+  const t = useT();
 
   return (
-    <Modal isOpen={isDisplayOpen} onClose={closeDisplay} title="Отображение" width="lg">
+    <Modal isOpen={isDisplayOpen} onClose={closeDisplay} title={t('display.title')} width="lg">
       <div className="space-y-6 py-1 text-sm">
-        {/* ── Document section ─────────────────────────────────────── */}
-        <Section title="Документ">
-          <Row label="Шрифт">
+        <Section title={t('display.section.document')}>
+          <Row label={t('display.font')}>
             <SegmentedControl<ReaderFontFamily>
               value={readerFontFamily}
               onChange={setReaderFontFamily}
@@ -44,7 +45,7 @@ export function DisplayModal() {
             />
           </Row>
 
-          <Row label="Размер">
+          <Row label={t('display.size')}>
             <SegmentedControl<ReaderFontSize>
               value={readerFontSize}
               onChange={setReaderFontSize}
@@ -57,35 +58,34 @@ export function DisplayModal() {
             />
           </Row>
 
-          <Row label="Высота строки">
+          <Row label={t('display.lineHeight')}>
             <SegmentedControl<ReaderLineHeight>
               value={readerLineHeight}
               onChange={setReaderLineHeight}
               options={[
-                { value: 'compact', label: 'Плотно' },
-                { value: 'normal', label: 'Обычно' },
-                { value: 'relaxed', label: 'Просторно' },
+                { value: 'compact', label: t('display.lineHeight.compact') },
+                { value: 'normal', label: t('display.lineHeight.normal') },
+                { value: 'relaxed', label: t('display.lineHeight.relaxed') },
               ]}
             />
           </Row>
 
-          <Row label="Ширина области просмотра">
+          <Row label={t('display.width')}>
             <SegmentedControl<ReaderWidth>
               value={readerWidth}
               onChange={setReaderWidth}
               options={[
-                { value: 'narrow', label: 'Узкая' },
-                { value: 'medium', label: 'Средняя' },
-                { value: 'wide', label: 'Широкая' },
-                { value: 'full', label: 'По окну' },
+                { value: 'narrow', label: t('display.width.narrow') },
+                { value: 'medium', label: t('display.width.medium') },
+                { value: 'wide', label: t('display.width.wide') },
+                { value: 'full', label: t('display.width.full') },
               ]}
             />
           </Row>
         </Section>
 
-        {/* ── Editor section ───────────────────────────────────────── */}
-        <Section title="Редактор">
-          <Row label="Размер шрифта в редакторе">
+        <Section title={t('display.section.editor')}>
+          <Row label={t('display.editorFontSize')}>
             <SegmentedControl<EditorFontSize>
               value={editorFontSize}
               onChange={setEditorFontSize}
@@ -98,32 +98,29 @@ export function DisplayModal() {
             />
           </Row>
 
-          <Row label="Перенос строк">
+          <Row label={t('display.editorWrap')}>
             <Toggle value={editorWrap} onChange={setEditorWrap} />
           </Row>
         </Section>
 
-        {/* ── Footer with reset ─────────────────────────────────────── */}
         <div className="flex items-center justify-between border-t border-border pt-4">
           <button
             onClick={resetDisplay}
             className="text-xs text-muted transition-colors hover:text-text"
           >
-            Сбросить к настройкам по умолчанию
+            {t('display.reset')}
           </button>
           <button
             onClick={closeDisplay}
             className="rounded-md bg-accent px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-accent-hover"
           >
-            Готово
+            {t('display.done')}
           </button>
         </div>
       </div>
     </Modal>
   );
 }
-
-/* ─── Helpers ──────────────────────────────────────────────────────── */
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -148,9 +145,7 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
 interface SegmentedOption<T> {
   value: T;
   label: string;
-  /** font-family preview shown as the button's font (used for font-family picker) */
   preview?: 'serif' | 'sans' | 'mono';
-  /** font-size in px to display the label at (used for size picker) */
   sizeIndicator?: number;
 }
 
@@ -192,19 +187,32 @@ function SegmentedControl<T extends string | number>({
 }
 
 function Toggle({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) {
+  /*
+   * Layout (precise pixel math, no Tailwind arbitrary values):
+   *
+   *   track: 40px wide × 24px tall
+   *   knob:  20px × 20px, 2px gap from each edge
+   *
+   * inactive: knob.left = 2px       → right edge at  22px (inside track)
+   * active:   knob.left = 18px      → right edge at  38px (2px inset on right)
+   *
+   * We use inline `left` rather than `translate-x-[…]` because Tailwind's
+   * JIT can be unreliable with arbitrary translate values inside template
+   * literals — switching to the absolute positioning model with a numeric
+   * style avoids the class-name purge surprises altogether.
+   */
   return (
     <button
       role="switch"
       aria-checked={value}
       onClick={() => onChange(!value)}
-      className={`relative h-6 w-10 rounded-full transition-colors duration-200 ${
+      className={`relative inline-block h-6 w-10 shrink-0 rounded-full transition-colors duration-200 ${
         value ? 'bg-accent' : 'bg-border'
       }`}
     >
       <span
-        className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-soft transition-transform duration-200 ${
-          value ? 'translate-x-[18px]' : 'translate-x-0.5'
-        }`}
+        className="absolute h-5 w-5 rounded-full bg-white shadow-soft transition-[left] duration-200"
+        style={{ top: 2, left: value ? 18 : 2 }}
       />
     </button>
   );

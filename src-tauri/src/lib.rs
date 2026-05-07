@@ -26,6 +26,7 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
+        .plugin(tauri_plugin_opener::init())
         .manage(Mutex::new(WatcherState::new()))
         .invoke_handler(tauri::generate_handler![
             commands::read_text_file,

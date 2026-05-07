@@ -13,10 +13,12 @@ import { registerKeyboardShortcuts } from '@/lib/shortcuts';
 import { initFileOpenListener } from '@/lib/fs/openHandler';
 import { useDragAndDrop } from '@/lib/fs/dragDrop';
 import { useFileWatcher } from '@/lib/fs/fileWatcher';
+import { translations } from '@/lib/i18n/translations';
 
 export function App() {
   const content = useFileStore((s) => s.content);
   const mode = useUIStore((s) => s.mode);
+  const language = useUIStore((s) => s.language);
   const editorRef = useRef<EditorHandle>(null);
 
   const dragState = useDragAndDrop();
@@ -27,6 +29,41 @@ export function App() {
     initFileOpenListener();
     return cleanup;
   }, []);
+
+  /*
+   * Live-translate the welcome doc when language changes.
+   * If the user is currently looking at one of the welcome docs (any language)
+   * with a clean buffer and no file open, swap it for the version in the new
+   * language. We compare against ALL known welcome strings, so this works even
+   * after multiple language switches.
+   *
+   * Skipped when:
+   *   - a real file is open (filePath !== null)
+   *   - the buffer is dirty (user has typed something)
+   *   - the current content is custom text typed from the New File state
+   */
+  useEffect(() => {
+    const state = useFileStore.getState();
+    if (state.filePath !== null || state.isDirty) return;
+
+    const isCurrentlyOnWelcome = Object.values(translations).some(
+      (dict) => dict['welcome.doc'] === state.content,
+    );
+    if (!isCurrentlyOnWelcome) return;
+
+    const newWelcome = translations[language]['welcome.doc'];
+    if (newWelcome && newWelcome !== state.content) {
+      // Use loadFile to also reset originalContent so isDirty stays false
+      useFileStore.getState().loadFile('', newWelcome);
+      // ...but loadFile sets a path; reset() would clear it. Use a manual reset:
+      useFileStore.setState({
+        filePath: null,
+        content: newWelcome,
+        originalContent: newWelcome,
+        isDirty: false,
+      });
+    }
+  }, [language]);
 
   return (
     <div className="flex h-full flex-col bg-bg text-text">

@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { useT } from '@/lib/i18n/useT';
 
 interface ConflictModalProps {
   show: boolean;
@@ -7,24 +8,9 @@ interface ConflictModalProps {
   onKeep: () => void;
 }
 
-/**
- * Conflict modal for external file changes.
- *
- * This is a blocking modal (NOT a banner) by design — file conflict is a
- * destructive situation where ignoring the warning could mean losing
- * unsaved work. The modal:
- *
- *   • blocks interaction with the editor until the user decides
- *   • makes the visual weight match the severity of the choice
- *   • styles "Загрузить" as destructive to encourage caution
- *   • styles "Оставить мои" as the safe primary action
- *   • Escape acts as "Оставить мои" — the safe default
- *
- * Backdrop clicks are intentionally NOT a dismiss handler — that would be
- * too easy to do accidentally and ambiguous about the meaning.
- */
 export function ConflictModal({ show, filePath, onReload, onKeep }: ConflictModalProps) {
-  // Escape = safe default = keep local
+  const t = useT();
+
   useEffect(() => {
     if (!show) return;
     const onKey = (e: KeyboardEvent) => {
@@ -39,11 +25,10 @@ export function ConflictModal({ show, filePath, onReload, onKeep }: ConflictModa
 
   if (!show) return null;
 
-  const fileName = filePath ? filePath.split(/[/\\]/).pop() ?? filePath : 'файл';
+  const fileName = filePath ? filePath.split(/[/\\]/).pop() ?? filePath : t('file.untitled');
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center">
-      {/* Backdrop — blocks all interaction with the app behind */}
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
 
       <div className="relative mx-4 w-full max-w-md rounded-xl border border-border bg-elevated shadow-elevated">
@@ -53,15 +38,15 @@ export function ConflictModal({ show, filePath, onReload, onKeep }: ConflictModa
           </div>
           <div className="flex-1 pt-0.5">
             <h2 className="text-sm font-semibold text-text">
-              Обновление файла
+              {t('conflict.title')}
             </h2>
             <p className="mt-1 text-sm leading-relaxed text-muted">
-              Файл <span className="font-medium text-text">{fileName}</span> был изменён
-              другой программой. Если загрузить обновлённую версию, ваши текущие изменения
-              в редакторе будут потеряны.
+              {t('conflict.description.prefix')}{' '}
+              <span className="font-medium text-text">{fileName}</span>{' '}
+              {t('conflict.description.suffix')}
             </p>
             <p className="mt-2 text-sm leading-relaxed text-muted">
-              Что сделать?
+              {t('conflict.question')}
             </p>
           </div>
         </div>
@@ -71,14 +56,14 @@ export function ConflictModal({ show, filePath, onReload, onKeep }: ConflictModa
             onClick={onReload}
             className="rounded-md border border-border px-3 py-1.5 text-sm font-medium text-muted transition-colors hover:border-red-400/40 hover:bg-red-500/10 hover:text-red-500"
           >
-            Загрузить обновлённый файл
+            {t('conflict.reload')}
           </button>
           <button
             onClick={onKeep}
             autoFocus
             className="rounded-md bg-accent px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-accent-hover"
           >
-            Оставить мои изменения
+            {t('conflict.keep')}
           </button>
         </div>
       </div>

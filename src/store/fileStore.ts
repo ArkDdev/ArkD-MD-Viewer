@@ -1,24 +1,5 @@
 import { create } from 'zustand';
-
-const WELCOME_DOC = `# Welcome to ArkD. MD Viewer
-
-A fast, lightweight markdown viewer with editing on demand.
-
-## Getting started
-
-- Press **⌘O / Ctrl+O** to open a markdown file
-- Press **⌘E / Ctrl+E** to toggle edit mode
-- Press **⌘S / Ctrl+S** to save
-
-## Features
-
-- GitHub-flavoured markdown
-- Syntax highlighting via Shiki
-- Math via KaTeX
-- Task lists, footnotes, tables
-
-> Open a \`.md\` file or start typing to begin.
-`;
+import { t } from '@/lib/i18n/useT';
 
 interface FileState {
   filePath: string | null;
@@ -32,37 +13,51 @@ interface FileState {
   reset: () => void;
 }
 
-export const useFileStore = create<FileState>((set) => ({
-  filePath: null,
-  content: WELCOME_DOC,
-  originalContent: WELCOME_DOC,
-  isDirty: false,
+/**
+ * Welcome doc is read fresh from translations every time we need it,
+ * so switching language while on the welcome screen replaces its text
+ * instantly via the loadFile path.
+ */
+function welcomeDoc(): string {
+  return t('welcome.doc');
+}
 
-  setContent: (content) =>
-    set((state) => ({
-      content,
-      isDirty: content !== state.originalContent,
-    })),
+export const useFileStore = create<FileState>((set) => {
+  const initial = welcomeDoc();
+  return {
+    filePath: null,
+    content: initial,
+    originalContent: initial,
+    isDirty: false,
 
-  loadFile: (path, content) =>
-    set({
-      filePath: path,
-      content,
-      originalContent: content,
-      isDirty: false,
-    }),
+    setContent: (content) =>
+      set((state) => ({
+        content,
+        isDirty: content !== state.originalContent,
+      })),
 
-  markSaved: () =>
-    set((state) => ({
-      originalContent: state.content,
-      isDirty: false,
-    })),
+    loadFile: (path, content) =>
+      set({
+        filePath: path,
+        content,
+        originalContent: content,
+        isDirty: false,
+      }),
 
-  reset: () =>
-    set({
-      filePath: null,
-      content: WELCOME_DOC,
-      originalContent: WELCOME_DOC,
-      isDirty: false,
-    }),
-}));
+    markSaved: () =>
+      set((state) => ({
+        originalContent: state.content,
+        isDirty: false,
+      })),
+
+    reset: () => {
+      const fresh = welcomeDoc();
+      set({
+        filePath: null,
+        content: fresh,
+        originalContent: fresh,
+        isDirty: false,
+      });
+    },
+  };
+});

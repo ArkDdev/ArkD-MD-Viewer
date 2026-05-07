@@ -1,10 +1,12 @@
 import type { DragDropState } from '@/lib/fs/dragDrop';
+import { useT } from '@/lib/i18n/useT';
 
 interface DragOverlayProps {
   state: DragDropState;
 }
 
 export function DragOverlay({ state }: DragOverlayProps) {
+  const t = useT();
   if (!state.isDragOver) return null;
 
   const { hasSupportedFile, message } = state;
@@ -34,7 +36,7 @@ export function DragOverlay({ state }: DragOverlayProps) {
           <div className="text-sm font-medium text-text">{message}</div>
           {!hasSupportedFile && (
             <div className="mt-1 text-xs text-subtle">
-              Перетащите файл с расширением .md или .markdown
+              {t('dragdrop.unsupportedHint')}
             </div>
           )}
         </div>

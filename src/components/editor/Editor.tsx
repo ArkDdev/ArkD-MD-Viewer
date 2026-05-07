@@ -9,6 +9,7 @@ import { closeBrackets, closeBracketsKeymap } from '@codemirror/autocomplete';
 import { tags as t } from '@lezer/highlight';
 import { useFileStore } from '@/store/fileStore';
 import { useUIStore } from '@/store/uiStore';
+import { useT } from '@/lib/i18n/useT';
 import { MaximizeIcon, PanelIcon } from '@/components/ui/Icons';
 import { EditorToolbar } from './EditorToolbar';
 
@@ -118,6 +119,7 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
 ) {
   const hostRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
+  const t = useT();
 
   // Compartments allow hot-swapping configs without rebuilding the editor
   const highlightCompartment = useRef(new Compartment());
@@ -252,8 +254,8 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
         {showPaneToggle && (
           <button
             onClick={() => useUIStore.getState().togglePreview()}
-            aria-label={isFull ? 'Показать превью' : 'Скрыть превью'}
-            title={isFull ? 'Показать превью' : 'Скрыть превью'}
+            aria-label={isFull ? t('editor.showPreview') : t('editor.hidePreview')}
+            title={isFull ? t('editor.showPreview') : t('editor.hidePreview')}
             className="absolute right-3 top-3 flex h-7 w-7 items-center justify-center rounded-md bg-elevated/90 text-muted shadow-soft backdrop-blur-sm transition-colors hover:bg-elevated hover:text-text"
           >
             {isFull ? <PanelIcon /> : <MaximizeIcon />}

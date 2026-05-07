@@ -1,7 +1,7 @@
 {
   "name": "arkd-md-viewer",
   "private": true,
-  "version": "0.1.0",
+  "version": "1.0.1",
   "description": "ArkD. MD Viewer — fast, lightweight markdown viewer with editing mode",
   "type": "module",
   "scripts": {
@@ -26,6 +26,7 @@
     "@tauri-apps/api": "^2.0.0",
     "@tauri-apps/plugin-dialog": "^2.0.0",
     "@tauri-apps/plugin-fs": "^2.0.0",
+    "@tauri-apps/plugin-opener": "^2.0.0",
     "markdown-it": "^14.1.0",
     "markdown-it-anchor": "^9.0.1",
     "markdown-it-footnote": "^4.0.0",

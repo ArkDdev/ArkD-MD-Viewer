@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useFileStore } from '@/store/fileStore';
 import { useUIStore } from '@/store/uiStore';
 import { pickAndOpenFile, saveFile, saveFileAs } from '@/lib/fs/files';
+import { useT } from '@/lib/i18n/useT';
 import {
   MenuIcon,
   FileIcon,
@@ -14,6 +15,7 @@ import {
 export function MenuButton() {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const t = useT();
 
   useEffect(() => {
     if (!open) return;
@@ -73,7 +75,7 @@ export function MenuButton() {
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen((v) => !v)}
-        aria-label="Menu"
+        aria-label={t('topbar.menu')}
         className={`flex h-7 w-7 items-center justify-center rounded-md transition-colors duration-150 ${
           open ? 'bg-surface text-text' : 'text-muted hover:bg-surface hover:text-text'
         }`}
@@ -82,19 +84,19 @@ export function MenuButton() {
       </button>
 
       {open && (
-        <div className="absolute left-0 top-9 z-50 w-64 overflow-hidden rounded-lg border border-border bg-elevated shadow-elevated">
-          <MenuItem icon={<FileIcon />} label="Новый файл" hint="Ctrl+N" onClick={handleNew} />
-          <MenuItem icon={<FolderIcon />} label="Открыть…" hint="Ctrl+O" onClick={handleOpen} />
+        <div className="absolute left-0 top-9 z-50 w-72 overflow-hidden rounded-lg border border-border bg-elevated shadow-elevated">
+          <MenuItem icon={<FileIcon />} label={t('menu.new')} hint="Ctrl+N" onClick={handleNew} />
+          <MenuItem icon={<FolderIcon />} label={t('menu.open')} hint="Ctrl+O" onClick={handleOpen} />
           <MenuDivider />
-          <MenuItem icon={<SaveIcon />} label="Сохранить" hint="Ctrl+S" onClick={handleSave} />
+          <MenuItem icon={<SaveIcon />} label={t('menu.save')} hint="Ctrl+S" onClick={handleSave} />
           <MenuItem
             icon={<SaveAsIcon />}
-            label="Сохранить как…"
+            label={t('menu.saveAs')}
             hint="Ctrl+Shift+S"
             onClick={handleSaveAs}
           />
           <MenuDivider />
-          <MenuItem icon={<SettingsIcon />} label="Настройки" onClick={handleSettings} />
+          <MenuItem icon={<SettingsIcon />} label={t('menu.settings')} onClick={handleSettings} />
         </div>
       )}
     </div>

@@ -1,5 +1,6 @@
 import { useFileStore } from '@/store/fileStore';
 import { useUIStore, resolveTheme } from '@/store/uiStore';
+import { useT } from '@/lib/i18n/useT';
 import { MenuButton } from './MenuButton';
 import { WindowControls } from './WindowControls';
 import {
@@ -13,10 +14,11 @@ import {
 export function TopBar() {
   const { filePath, isDirty } = useFileStore();
   const { mode, themeOverride, setTheme, toggleEdit, openDisplay } = useUIStore();
+  const t = useT();
 
   const fileName = filePath
-    ? filePath.split(/[/\\]/).pop() ?? 'Untitled'
-    : 'Untitled';
+    ? filePath.split(/[/\\]/).pop() ?? t('file.untitled')
+    : t('file.untitled');
 
   const isEditing = mode === 'edit' || mode === 'edit-full';
   const effectiveTheme = resolveTheme(themeOverride);
@@ -26,12 +28,10 @@ export function TopBar() {
       data-tauri-drag-region
       className="relative flex h-10 shrink-0 items-stretch border-b border-border bg-bg select-none"
     >
-      {/* Left: burger menu */}
       <div className="flex items-center gap-1 px-2" data-tauri-drag-region>
         <MenuButton />
       </div>
 
-      {/* Center: file name (truncated in middle for long paths) */}
       <div
         data-tauri-drag-region
         className="pointer-events-none absolute inset-x-0 top-0 flex h-10 items-center justify-center px-40"
@@ -52,24 +52,23 @@ export function TopBar() {
 
       <div className="flex-1" data-tauri-drag-region />
 
-      {/* Right: theme buttons + display + edit toggle */}
       <div className="flex items-center gap-0.5 px-2" data-tauri-drag-region>
         <ThemeButton
           icon={<SunIcon />}
           isActive={effectiveTheme === 'light'}
           onClick={() => setTheme('light')}
-          ariaLabel="Светлая тема"
+          ariaLabel={t('topbar.theme.light')}
         />
         <ThemeButton
           icon={<MoonIcon />}
           isActive={effectiveTheme === 'dark'}
           onClick={() => setTheme('dark')}
-          ariaLabel="Тёмная тема"
+          ariaLabel={t('topbar.theme.dark')}
         />
 
         <div className="mx-1 h-4 w-px bg-border" />
 
-        <ChromeButton onClick={openDisplay} ariaLabel="Display" title="Отображение">
+        <ChromeButton onClick={openDisplay} ariaLabel={t('topbar.display')} title={t('topbar.display')}>
           <SlidersIcon />
         </ChromeButton>
 
@@ -132,6 +131,7 @@ function ChromeButton({
 }
 
 function EditToggle({ isEditing, onClick }: { isEditing: boolean; onClick: () => void }) {
+  const t = useT();
   return (
     <button
       onClick={onClick}
@@ -142,7 +142,7 @@ function EditToggle({ isEditing, onClick }: { isEditing: boolean; onClick: () =>
       }`}
     >
       {isEditing ? <EyeIcon /> : <PencilIcon />}
-      <span>{isEditing ? 'Просмотр' : 'Редактирование'}</span>
+      <span>{isEditing ? t('topbar.editToggle.toView') : t('topbar.editToggle.toEdit')}</span>
     </button>
   );
 }

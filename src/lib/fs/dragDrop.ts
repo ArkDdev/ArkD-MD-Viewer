@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { readFileByPath } from '@/lib/fs/files';
 import { useFileStore } from '@/store/fileStore';
+import { t } from '@/lib/i18n/useT';
 
 const SUPPORTED_EXTENSIONS = ['md', 'markdown', 'mdx', 'mkd'];
 
@@ -11,22 +12,11 @@ function isSupported(path: string): boolean {
 }
 
 export interface DragDropState {
-  /** True while files are being dragged over the window */
   isDragOver: boolean;
-  /** True when the dragged file(s) include at least one supported one */
   hasSupportedFile: boolean;
-  /** Optional message to show in overlay (e.g. error feedback) */
   message: string | null;
 }
 
-/**
- * Sets up Tauri-level drag & drop handling.
- * - On enter/over: updates state for visual feedback
- * - On drop: opens the first supported file (md/markdown/mdx/mkd)
- * - Unsupported files are silently ignored (overlay shows feedback)
- *
- * Returns reactive state for rendering the overlay.
- */
 export function useDragAndDrop(): DragDropState {
   const [state, setState] = useState<DragDropState>({
     isDragOver: false,
@@ -50,9 +40,9 @@ export function useDragAndDrop(): DragDropState {
             hasSupportedFile: supported,
             message: supported
               ? paths.length === 1
-                ? 'Открыть файл'
-                : `Открыть первый из ${paths.length} файлов`
-              : 'Поддерживаются только .md, .markdown, .mdx, .mkd',
+                ? t('dragdrop.openOne')
+                : t('dragdrop.openFirstOf', { count: paths.length })
+              : t('dragdrop.unsupported'),
           });
         } else if (payload.type === 'drop') {
           setState({ isDragOver: false, hasSupportedFile: false, message: null });
@@ -70,7 +60,6 @@ export function useDragAndDrop(): DragDropState {
             })();
           }
         } else {
-          // 'leave' / 'cancel'
           setState({ isDragOver: false, hasSupportedFile: false, message: null });
         }
       });

@@ -1,30 +1,14 @@
 import type { RefObject } from 'react';
 import type { EditorView } from '@codemirror/view';
+import { useT } from '@/lib/i18n/useT';
 
 interface EditorToolbarProps {
   viewRef: RefObject<EditorView | null>;
 }
 
-/**
- * Markdown formatting toolbar.
- *
- * Inline wrappers (B, I, S, code) implement proper toggle:
- *   - If selection is wrapped in markers → unwrap (strip the markers)
- *   - If selection isn't wrapped but the immediate surrounding text is → unwrap
- *   - Otherwise → wrap
- *
- * Block-level prefixes (headings, lists, quotes) toggle by checking
- * whether the line already starts with the prefix.
- */
 export function EditorToolbar({ viewRef }: EditorToolbarProps) {
-  /**
-   * Toggle an inline wrapper. Handles three cases:
-   *  1) Selected text already starts with `before` and ends with `after` →
-   *     remove them (selection contained the markers).
-   *  2) The text immediately around the selection is the markers →
-   *     remove them (markers outside the selection).
-   *  3) Neither → wrap the selection.
-   */
+  const t = useT();
+
   const toggleWrap = (before: string, after: string = before) => () => {
     const view = viewRef.current;
     if (!view) return;
@@ -32,7 +16,6 @@ export function EditorToolbar({ viewRef }: EditorToolbarProps) {
     const doc = view.state.doc;
     const selected = doc.sliceString(from, to);
 
-    // Case 1: selection already contains the wrappers at its edges
     if (selected.startsWith(before) && selected.endsWith(after) && selected.length >= before.length + after.length) {
       const inner = selected.slice(before.length, selected.length - after.length);
       view.dispatch({
@@ -43,7 +26,6 @@ export function EditorToolbar({ viewRef }: EditorToolbarProps) {
       return;
     }
 
-    // Case 2: wrappers are immediately outside the selection
     const beforeStart = Math.max(0, from - before.length);
     const afterEnd = Math.min(doc.length, to + after.length);
     const leftCheck = doc.sliceString(beforeStart, from);
@@ -60,7 +42,6 @@ export function EditorToolbar({ viewRef }: EditorToolbarProps) {
       return;
     }
 
-    // Case 3: wrap
     const insert = before + selected + after;
     view.dispatch({
       changes: { from, to, insert },
@@ -72,7 +53,6 @@ export function EditorToolbar({ viewRef }: EditorToolbarProps) {
     view.focus();
   };
 
-  /** Toggle a line-prefix marker (#, >, -, etc.) */
   const toggleLinePrefix = (prefix: string) => () => {
     const view = viewRef.current;
     if (!view) return;
@@ -92,7 +72,6 @@ export function EditorToolbar({ viewRef }: EditorToolbarProps) {
     view.focus();
   };
 
-  /** Insert a code block (```) skeleton with cursor inside */
   const insertCodeBlock = () => {
     const view = viewRef.current;
     if (!view) return;
@@ -101,8 +80,7 @@ export function EditorToolbar({ viewRef }: EditorToolbarProps) {
     const atLineStart = from === line.from;
     const prefix = atLineStart ? '' : '\n';
     const insert = prefix + '```\n\n```\n';
-    // Cursor goes between the two lines of fences
-    const cursor = from + prefix.length + 4; // length of '```\n'
+    const cursor = from + prefix.length + 4;
     view.dispatch({
       changes: { from, to, insert },
       selection: { anchor: cursor },
@@ -110,13 +88,12 @@ export function EditorToolbar({ viewRef }: EditorToolbarProps) {
     view.focus();
   };
 
-  /** Insert a link with placeholder, selecting the URL part for quick replacement */
   const insertLink = () => {
     const view = viewRef.current;
     if (!view) return;
     const { from, to } = view.state.selection.main;
     const selected = view.state.sliceDoc(from, to);
-    const text = selected || 'текст';
+    const text = selected || t('editor.linkPlaceholder');
     const insert = `[${text}](url)`;
     view.dispatch({
       changes: { from, to, insert },
@@ -130,43 +107,43 @@ export function EditorToolbar({ viewRef }: EditorToolbarProps) {
 
   return (
     <div className="flex h-9 shrink-0 items-center gap-0.5 border-b border-border bg-bg px-2">
-      <ToolButton onClick={toggleWrap('**')} label="Жирный" hint="Ctrl+B">
+      <ToolButton onClick={toggleWrap('**')} label={t('editor.tool.bold')} hint="Ctrl+B">
         <span className="font-bold">B</span>
       </ToolButton>
-      <ToolButton onClick={toggleWrap('*')} label="Курсив" hint="Ctrl+I">
+      <ToolButton onClick={toggleWrap('*')} label={t('editor.tool.italic')} hint="Ctrl+I">
         <span className="italic font-serif">I</span>
       </ToolButton>
-      <ToolButton onClick={toggleWrap('~~')} label="Зачёркнутый">
+      <ToolButton onClick={toggleWrap('~~')} label={t('editor.tool.strike')}>
         <span className="line-through">S</span>
       </ToolButton>
-      <ToolButton onClick={toggleWrap('`')} label="Inline code">
+      <ToolButton onClick={toggleWrap('`')} label={t('editor.tool.code')}>
         <CodeInlineIcon />
       </ToolButton>
 
       <Divider />
 
-      <ToolButton onClick={toggleLinePrefix('# ')} label="Заголовок 1">
+      <ToolButton onClick={toggleLinePrefix('# ')} label={t('editor.tool.h1')}>
         <span className="text-[11px] font-semibold">H1</span>
       </ToolButton>
-      <ToolButton onClick={toggleLinePrefix('## ')} label="Заголовок 2">
+      <ToolButton onClick={toggleLinePrefix('## ')} label={t('editor.tool.h2')}>
         <span className="text-[11px] font-semibold">H2</span>
       </ToolButton>
-      <ToolButton onClick={toggleLinePrefix('### ')} label="Заголовок 3">
+      <ToolButton onClick={toggleLinePrefix('### ')} label={t('editor.tool.h3')}>
         <span className="text-[11px] font-semibold">H3</span>
       </ToolButton>
 
       <Divider />
 
-      <ToolButton onClick={insertLink} label="Ссылка">
+      <ToolButton onClick={insertLink} label={t('editor.tool.link')}>
         <LinkIcon />
       </ToolButton>
-      <ToolButton onClick={toggleLinePrefix('- ')} label="Список">
+      <ToolButton onClick={toggleLinePrefix('- ')} label={t('editor.tool.list')}>
         <ListIcon />
       </ToolButton>
-      <ToolButton onClick={toggleLinePrefix('> ')} label="Цитата">
+      <ToolButton onClick={toggleLinePrefix('> ')} label={t('editor.tool.quote')}>
         <QuoteIcon />
       </ToolButton>
-      <ToolButton onClick={insertCodeBlock} label="Блок кода">
+      <ToolButton onClick={insertCodeBlock} label={t('editor.tool.codeBlock')}>
         <CodeBlockIcon />
       </ToolButton>
     </div>
@@ -203,8 +180,6 @@ function ToolButton({
 function Divider() {
   return <div className="mx-1 h-4 w-px bg-border" />;
 }
-
-/* ── Inline icons ──────────────────────────────────────────── */
 
 function CodeInlineIcon() {
   return (
