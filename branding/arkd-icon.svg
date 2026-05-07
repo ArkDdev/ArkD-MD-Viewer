@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ArkD. MD Viewer — application icon
+  Variant: M-C (Soft heavy)
+  Color:  Terracotta #C76D46 (matches the app accent color)
+
+  Master file. To regenerate the rasterized PNG/ICO icons:
+    1. Run scripts/build-icons.ps1 in the project root
+    2. Generated files land in src-tauri/icons/
+
+  Design notes:
+    - Single solid-color path on a transparent 64×64 canvas.
+    - Heavy stroke weight + rounded terminals + slightly condensed
+      proportions read clearly down to 16×16 against any background.
+    - viewBox at 0 0 64 64 (working unit), final assets are exported
+      at 16, 24, 32, 48, 64, 128, 256 px.
+-->
+<svg xmlns="http://www.w3.org/2000/svg"
+     viewBox="0 0 64 64"
+     width="64"
+     height="64">
+  <path
+    d="M 8 14
+       Q 8 8 14 8
+       L 18 8
+       Q 22 8 23 12
+       L 32 36
+       L 41 12
+       Q 42 8 46 8
+       L 50 8
+       Q 56 8 56 14
+       L 56 50
+       Q 56 56 50 56
+       L 47 56
+       Q 44 56 44 52
+       L 44 28
+       L 37 47
+       Q 36 50 32 50
+       Q 28 50 27 47
+       L 20 28
+       L 20 52
+       Q 20 56 17 56
+       L 14 56
+       Q 8 56 8 50
+       Z"
+    fill="#C76D46" />
+</svg>
