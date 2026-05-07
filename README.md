@@ -1,109 +1,159 @@
-# ArkD. MD Viewer
+<div align="center">
+  <img src="branding/arkd-icon.png" alt="ArkD. MD Viewer" width="120" height="120">
 
-A fast, lightweight Markdown viewer with on-demand editing.
-Built on Tauri 2 + React + TypeScript + Tailwind. Bundle size target: < 10 MB.
+  <h1>ArkD. MD Viewer</h1>
 
-## Philosophy
+  <p>
+    <strong>Fast, lightweight Markdown viewer with on-demand editing.</strong><br>
+    Built with Tauri 2 — installer under 4 MB, sub-second cold start.
+  </p>
 
-ArkD opens `.md` files for **reading first**. The editor is one keystroke
-away (⌘E / Ctrl+E), but it isn't the default — the goal is the calm,
-typography-led reading experience of Claude Desktop, not yet another IDE for
-Markdown.
+  <p>
+    <a href="https://github.com/ArkDdev/ArkD-MD-Viewer/releases/latest"><img src="https://img.shields.io/github/v/release/ArkDdev/ArkD-MD-Viewer?label=release&color=C76D46" alt="Latest release"></a>
+    <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT"></a>
+    <img src="https://img.shields.io/badge/platform-Windows-lightgrey" alt="Platform: Windows">
+    <img src="https://img.shields.io/badge/built%20with-Tauri%202-FFC131" alt="Built with Tauri 2">
+  </p>
 
-## Stack
+  <p>
+    <a href="https://github.com/ArkDdev/ArkD-MD-Viewer/releases/latest">⬇ Download for Windows</a>
+    ·
+    <a href="#features">Features</a>
+    ·
+    <a href="#screenshots">Screenshots</a>
+    ·
+    <a href="README.ru.md">🇷🇺 Русский</a>
+  </p>
+</div>
 
-- **Tauri 2** — Rust backend, system WebView frontend
-- **Vite + React 18 + TypeScript** — UI
-- **Tailwind CSS v3** — styling, with custom design tokens
-- **markdown-it** + plugins — parsing (anchor, footnote, task-lists)
-- **Shiki** — syntax highlighting (lazy language loading)
-- **CodeMirror 6** — editor
-- **Zustand** — state management
+<br>
 
-## Prerequisites
+<!-- Replace with a real screenshot of the app once you have it -->
+<p align="center">
+  <img src="docs/screenshots/hero.png" alt="ArkD. MD Viewer in split mode" width="900">
+</p>
 
-- **Node.js** ≥ 20
-- **Rust** ≥ 1.77 (install via [rustup](https://rustup.rs))
-- **Platform-specific**:
-  - **macOS**: Xcode Command Line Tools (`xcode-select --install`)
-  - **Windows**: Microsoft C++ Build Tools + WebView2 (preinstalled on Win11)
-  - **Linux**: `webkit2gtk-4.1`, `libssl-dev`, `librsvg2-dev`, `patchelf`,
-    `build-essential`. See the [Tauri prerequisites](https://tauri.app/start/prerequisites/).
+---
 
-## Getting started
+## Why ArkD?
 
-```bash
-# Install JS dependencies
-npm install
+Most Markdown editors are huge — Obsidian is around 150 MB, Typora ~70 MB, MarkText ~120 MB. They all bundle a copy of Chromium, even though the operating system already ships one.
 
-# Run in dev mode (Vite + Tauri dev window)
-npm run tauri:dev
+ArkD. MD Viewer is **3.3 MB** because it uses Tauri 2 and your system's WebView. It does the few things a Markdown viewer should do, very well, and gets out of the way.
 
-# Build a production bundle for the current platform
-npm run tauri:build
-```
+## Features
 
-The first `tauri:dev` will compile the Rust toolchain and may take a few
-minutes. Subsequent runs are fast.
+- 📄 **Read and edit** — toggle between rendered preview, side-by-side split, and full-screen edit
+- 🎨 **Light, dark, and system themes** — switch instantly with `☀ ☾`
+- 🔄 **External file watcher** — when a file changes outside the app, ArkD reloads it (or asks first if you have unsaved edits)
+- 🪂 **Drag & drop** — drop a `.md` file on the window to open it
+- ⌨️ **Keyboard shortcuts that work on any layout** — `Ctrl+S` works on Russian `Ctrl+Ы` too (matches physical keys, not characters)
+- 🔤 **Bundled fonts** — Inter, Source Serif 4, JetBrains Mono ship with the app
+- 🎛 **Customisable display** — font family, size, line height, reading width
+- 🌍 **Russian and English UI** — auto-detected from the system
+- 🎨 **Code syntax highlighting** via Shiki (with language label)
+- 📎 **File associations** — open `.md` files from Explorer with one double-click
+- 🚀 **Tiny and fast** — installer 3-4 MB, cold start under a second
 
-## Project layout
+## Screenshots
 
-```
-src/                    Frontend (React)
-├── app/                Entry point, root component
-├── components/
-│   ├── viewer/         Markdown renderer
-│   ├── editor/         CodeMirror wrapper
-│   ├── chrome/         TitleBar, Toolbar
-│   └── ui/             Reusable primitives
-├── lib/
-│   ├── markdown/       markdown-it parser config
-│   ├── highlight/      Shiki singleton
-│   └── fs/             Tauri FS wrappers, file-open handler
-├── store/              Zustand stores
-└── styles/             Tailwind globals + design tokens
+<table>
+<tr>
+<td align="center"><b>Light theme</b></td>
+<td align="center"><b>Dark theme</b></td>
+</tr>
+<tr>
+<td><img src="docs/screenshots/light.png" alt="Light theme"></td>
+<td><img src="docs/screenshots/dark.png" alt="Dark theme"></td>
+</tr>
+<tr>
+<td align="center"><b>Edit mode (split view)</b></td>
+<td align="center"><b>Display settings</b></td>
+</tr>
+<tr>
+<td><img src="docs/screenshots/edit.png" alt="Edit mode"></td>
+<td><img src="docs/screenshots/display.png" alt="Display settings"></td>
+</tr>
+</table>
 
-src-tauri/              Rust backend
-├── src/
-│   ├── main.rs         Binary entry
-│   ├── lib.rs          App setup, file-association handling
-│   └── commands.rs     read_text_file, write_text_file, get_initial_file
-├── capabilities/       Tauri v2 permissions
-└── tauri.conf.json     Window, bundle, file associations
-```
+## Install
+
+### Windows
+
+Download the latest installer from the [Releases page](https://github.com/ArkDdev/ArkD-MD-Viewer/releases/latest):
+
+- **NSIS installer** (`.exe`) — recommended for personal use, offers language selection during install
+- **MSI installer** (`.msi`) — for corporate environments using Group Policy
+
+Both installers register `.md`, `.markdown`, `.mdx`, and `.mkd` file associations system-wide.
+
+### macOS / Linux
+
+Coming soon — planned via GitHub Actions builds.
 
 ## Keyboard shortcuts
 
-| Action          | Windows / Linux  | macOS         |
-| --------------- | ---------------- | ------------- |
-| Open file       | `Ctrl+O`         | `⌘O`          |
-| Toggle edit     | `Ctrl+E`         | `⌘E`          |
-| Save            | `Ctrl+S`         | `⌘S`          |
-| Save as         | `Ctrl+Shift+S`   | `⌘⇧S`         |
+| Action | Shortcut |
+|---|---|
+| New file | `Ctrl+N` |
+| Open file | `Ctrl+O` |
+| Save | `Ctrl+S` |
+| Save as | `Ctrl+Shift+S` |
+| Toggle edit / preview | `Ctrl+E` |
+| Settings | `Ctrl+,` |
 
-## Icons
+All shortcuts use **physical key codes**, so they work identically on any keyboard layout — including Cyrillic.
 
-Before the first `tauri:build` you need to generate icons. The simplest path:
+## Tech stack
 
-```bash
-# Place a 1024×1024 PNG at ./app-icon.png, then:
-npx @tauri-apps/cli icon ./app-icon.png
+- **[Tauri 2](https://tauri.app/)** — Rust backend with system WebView2 (no Electron)
+- **[React 18](https://react.dev/)** + **[TypeScript](https://www.typescriptlang.org/)** — UI layer
+- **[Vite 5](https://vitejs.dev/)** — frontend bundling
+- **[CodeMirror 6](https://codemirror.net/)** — editor
+- **[markdown-it](https://github.com/markdown-it/markdown-it)** — markdown parsing
+- **[Shiki](https://shiki.style/)** — syntax highlighting (TextMate grammars, lazy-loaded)
+- **[Tailwind CSS 3](https://tailwindcss.com/)** — styling
+- **[Zustand](https://zustand-demo.pmnd.rs/)** — state management
+- **[notify](https://github.com/notify-rs/notify)** + **[notify-debouncer-mini](https://crates.io/crates/notify-debouncer-mini)** — file watching (Rust)
+
+## Build from source
+
+Requires:
+
+- **Node.js** 18+ and **npm**
+- **Rust** (latest stable) via [rustup](https://rustup.rs/)
+- **Microsoft C++ Build Tools** on Windows
+- **WebView2 Runtime** (preinstalled on Windows 11; auto-installed by NSIS)
+
+```sh
+git clone https://github.com/ArkDdev/ArkD-MD-Viewer.git
+cd ArkD-MD-Viewer
+npm install
+npm run tauri:dev      # development with hot reload
+npm run tauri:build    # production installers
 ```
 
-This populates `src-tauri/icons/` with all required formats.
+Output goes into `src-tauri/target/release/bundle/` — NSIS installers in `nsis/`, MSI installers in `msi/`.
 
 ## Roadmap
 
-- [x] Reader-first viewer with Claude-style typography
-- [x] Edit mode (CodeMirror 6)
-- [x] Split view
-- [x] OS file association for `.md`
-- [ ] Live file-watcher (auto-reload on external changes)
-- [ ] Sidebar with recent files
-- [ ] Export to HTML / PDF
-- [ ] Mermaid + KaTeX rendering
-- [ ] Custom themes / user CSS
+- [ ] macOS and Linux builds via GitHub Actions
+- [ ] Recent files menu
+- [ ] Table of contents sidebar
+- [ ] Find & replace within a document
+- [ ] Support for `.txt`, `.json`, `.ini` files (editor-only mode)
+- [ ] Auto-update via GitHub Releases
+
+Have a request or idea? [Open an issue](https://github.com/ArkDdev/ArkD-MD-Viewer/issues) or start a [discussion](https://github.com/ArkDdev/ArkD-MD-Viewer/discussions).
 
 ## License
 
-TBD.
+[MIT](LICENSE) — Copyright © 2026 Arkadiy Karanskiy (ArkD.DEV)
+
+You are free to use, modify, and distribute ArkD. MD Viewer, including for commercial purposes. The only requirement is to keep the copyright notice in derivative works.
+
+---
+
+<div align="center">
+  Made by <a href="https://github.com/ArkDdev"><b>ArkDdev</b></a>
+</div>

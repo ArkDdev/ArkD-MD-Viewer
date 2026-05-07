@@ -1,10 +1,14 @@
 use std::fs;
 use std::sync::Mutex;
 use once_cell::sync::Lazy;
+
+// `Manager` brings `get_webview_window` into scope; we only use it in the
+// debug-only setup block below, so the import is gated on the same cfg.
+#[cfg(debug_assertions)]
 use tauri::Manager;
 
 #[cfg(target_os = "macos")]
-use tauri::Emitter;
+use tauri::{Emitter, Manager as _};
 
 mod commands;
 mod watcher;

@@ -1,78 +1,115 @@
-# Иконка приложения — финальная версия M-C
+# GitHub-страница — финальное оформление
 
-## Что в архиве
+В архиве — всё для красивого оформления страницы репозитория и публикации релиза.
 
-```
-branding/
-  arkd-icon.svg    ← мастер (исходник)
-  arkd-icon.png    ← 1024×1024 PNG, прозрачный фон, терракота
-```
+## Файлы в архиве
 
-## Что нужно сделать
+- `LICENSE` — MIT, copyright "Arkadiy Karanskiy (ArkD.DEV)"
+- `README.md` — главный README на английском, "с лицом проекта"
+- `README.ru.md` — русский вариант
+- `RELEASE_NOTES_v1.0.1.md` — заготовка для GitHub Release
+- `docs/screenshots/README.md` — инструкция, какие скриншоты сделать
 
-### Шаг 1 — Распакуй архив в корень проекта
+## План на сегодня
 
-После распаковки появится папка `branding/` с двумя файлами. Эта папка — **источник истины** для иконки. SVG храни как мастер (если когда-то захочешь подредактировать — это исходник). PNG — это рендер для генератора иконок Tauri.
+### Шаг 1 — Распаковать архив
 
-### Шаг 2 — Сгенерируй полный набор иконок одной командой
+В корне проекта появятся 4 новых markdown-файла плюс папка `docs/screenshots/` с инструкцией.
 
-В корне проекта в PowerShell:
+Если у тебя уже был `README.md` (например, от Vite-стартера) — он перезапишется новой версией.
 
-```powershell
-npx tauri icon branding\arkd-icon.png
-```
+### Шаг 2 — Сделать скриншоты
 
-Tauri CLI **автоматически создаст всё нужное** в `src-tauri/icons/`:
-- `32x32.png`
-- `128x128.png`
-- `128x128@2x.png` (256×256 для high-DPI)
-- `icon.ico` (мульти-размерный для Windows)
-- `icon.icns` (для macOS)
-- `Square*Logo.png` и `StoreLogo.png` (для возможной публикации в Microsoft Store)
+Открой инструкцию `docs/screenshots/README.md` и сделай 5 скриншотов:
+- `hero.png` (главный, для верха страницы)
+- `light.png`, `dark.png` (тема)
+- `edit.png` (split-режим)
+- `display.png` (модал настроек)
 
-Команда работает **локально**, никаких внешних утилит, никакого интернета. Уже установленный `@tauri-apps/cli` всё сделает.
+Положи в `docs/screenshots/`. Без них README будет показывать "image not found" placeholder'ы.
 
-### Шаг 3 — Перезапусти dev и проверь
+### Шаг 3 — Закоммитить всё
 
 ```powershell
-npm run tauri:dev
+git add .
+git commit -m "docs: add LICENSE, README (EN/RU), screenshots placeholder
+
+- MIT License with copyright Arkadiy Karanskiy (ArkD.DEV)
+- README.md in English (primary)
+- README.ru.md in Russian
+- Screenshots placeholder structure under docs/screenshots/"
+git push
 ```
 
-Иконка должна появиться:
-- **В заголовке окна** (для Windows — в taskbar)
-- **В Alt+Tab** между окнами
-- **В трее** (когда сворачиваешь окно)
+### Шаг 4 — Настроить страницу репозитория на GitHub
 
-Если иконка **не обновилась** в taskbar после первого запуска — это **известная особенность Windows кеша иконок**, не баг. Лечится одним из способов:
-- Перезагрузить компьютер (надёжнее всего)
-- Или: очистить кеш через `ie4uinit.exe -show` в PowerShell
+Зайди на https://github.com/ArkDdev/ArkD-MD-Viewer и сделай:
 
-В production-сборке `tauri build` иконка всегда применяется правильно.
+**4.1. About-блок** (справа на странице, рядом с шестерёнкой "About"):
 
-## Если захочешь подредактировать иконку
+- **Description**: `Fast, lightweight Markdown viewer built with Tauri 2 — installer under 4 MB.`
+- **Website**: пока пусто (если будет лендинг — добавишь)
+- **Topics** (теги): добавь все из этого списка по одному:
+  ```
+  markdown
+  markdown-viewer
+  markdown-editor
+  tauri
+  tauri-app
+  rust
+  react
+  typescript
+  vite
+  windows-app
+  desktop-app
+  lightweight
+  open-source
+  ```
+- ✅ Поставь галочку **"Releases"** — чтобы они были видны на главной странице
+- ✅ Поставь галочку **"Packages"** если захочешь публиковать (можно потом)
+- ✅ Поставь галочку **"Discussions"** — это удобный канал для feedback от пользователей
 
-1. Открой `branding/arkd-icon.svg` в любом редакторе (Inkscape, Figma, или просто текстовом редакторе — там один path)
-2. Подкрути что нужно
-3. **Перерисуй PNG** одним из способов:
-   - Открой SVG в браузере → правый клик → "Сохранить как PNG" (нужно будет указать размер 1024×1024)
-   - Или используй любой online-конвертер SVG→PNG
-   - Или (если установлен ImageMagick): `magick branding\arkd-icon.svg -resize 1024x1024 branding\arkd-icon.png`
-4. Запусти снова `npx tauri icon branding\arkd-icon.png`
+**4.2. Включить Discussions** (если стоит галочка выше):
+- Settings → General → Features → Discussions → Enable
 
-## Технические детали
+### Шаг 5 — Создать Release v1.0.1
 
-**Цвет:** `#C76D46` — терракота, точно тот же, что используется как accent в UI приложения. Иконка визуально единая с самим приложением.
+1. Releases (на главной странице репозитория, справа) → **Draft a new release**
+2. **Choose a tag** → впиши `v1.0.1` → **Create new tag** (или выбери если уже создан)
+3. **Release title** → `v1.0.1 — First public release`
+4. **Description** → скопируй текст из `RELEASE_NOTES_v1.0.1.md`
+5. **Прикрепить файлы** (drag & drop):
+   - `src-tauri\target\release\bundle\nsis\ArkD. MD Viewer_1.0.1_x64-setup.exe`
+   - `src-tauri\target\release\bundle\msi\ArkD. MD Viewer_1.0.1_x64_en-US.msi`
+   - `src-tauri\target\release\bundle\msi\ArkD. MD Viewer_1.0.1_x64_ru-RU.msi`
+6. ✅ **Set as the latest release**
+7. **Publish release**
 
-**Прозрачный фон:** да. Это значит:
-- В Windows 11 taskbar иконка ложится на цвет панели задач (тёмный, светлый, или с обоями)
-- В файловом проводнике — на белый фон
-- В Alt+Tab — на полупрозрачный
-- На любой подложке буква читается, потому что терракота даёт контраст и со светлым, и с тёмным фоном
+Готово! Бейдж "release v1.0.1" в README автоматически подтянется (через shields.io API), потому что в нём указан твой репозиторий.
 
-**Размер мастера:** 1024×1024. Tauri CLI сам нагенерит из него все нужные размеры с правильным даунсэмплингом.
+## Как будет выглядеть страница
 
-**Антиалиасинг:** PNG отрендерен с supersampling × 4 и Lanczos-даунсемплингом — края очень чистые, без заметной "ступенчатости".
+Сверху — иконка M, название, описание, бейджи (release/license/platform/built-with), ссылки. Дальше — большой hero-скриншот в split-режиме.
 
-## Что дальше
+Под ним — секции **Why ArkD?**, **Features**, **Screenshots**, **Install**, **Keyboard shortcuts**, **Tech stack**, **Build from source**, **Roadmap**, **License**, footer "Made by ArkDdev".
 
-После генерации иконок переходим к **production-сборке через `npm run tauri:build`** — получишь настоящий `.exe` installer, проверим финальный размер и работу приложения вне dev-режима. Это финальный пункт перед релизом v1.0.1.
+Структура такая, какую обычно делают для качественных open-source инструментов.
+
+## Совет про README на двух языках
+
+Главный — английский. Это стандарт open-source — даже если твоя основная аудитория русскоязычная, английский README расширит охват в десятки раз. У русскоговорящих ребят с GitHub нет проблем читать по-английски.
+
+Русский — как **дополнение**, для тех, кому проще читать на родном. Ссылка `🇷🇺 Русский` сверху главного README ведёт на `README.ru.md`. И обратно тоже.
+
+## После публикации
+
+Когда нажмёшь "Publish release" — твой репозиторий **готов к показу миру**. Можешь расшарить ссылку:
+
+- В русскоязычных Telegram-каналах для разработчиков
+- На Reddit r/rust или r/tauriapps
+- В Twitter/X с тегом #tauri
+- В соответствующих Discord-серверах
+
+Не жди вирального хита, но интересные feedback и звёзды найдутся быстро.
+
+Удачи. 🎉

@@ -2,17 +2,24 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'node:path';
 
-// Tauri expects a fixed port; the dev server should also fail if that port is in use
+/*
+ * Tauri expects a fixed port; the dev server fails if that port is taken.
+ *
+ * The previous version wrapped this config in `async () => (...)`, which
+ * was historically necessary in Vite 4 for some plugin scenarios. In Vite 5
+ * with our setup it's not needed and the async wrapper confuses strict
+ * TypeScript builds (the `Plugin[][]` type bubbles up). Plain object form
+ * is fine.
+ */
 const host = process.env.TAURI_DEV_HOST;
 
-export default defineConfig(async () => ({
+export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
     },
   },
-  // Vite options tailored for Tauri development
   clearScreen: false,
   server: {
     port: 1420,
@@ -26,7 +33,7 @@ export default defineConfig(async () => ({
         }
       : undefined,
     watch: {
-      // Tell Vite to ignore watching `src-tauri`
+      // Don't watch the Rust workspace — Tauri's dev server handles those
       ignored: ['**/src-tauri/**'],
     },
   },
@@ -35,4 +42,4 @@ export default defineConfig(async () => ({
     minify: 'esbuild',
     sourcemap: false,
   },
-}));
+});

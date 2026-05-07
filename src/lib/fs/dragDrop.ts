@@ -28,11 +28,23 @@ export function useDragAndDrop(): DragDropState {
     const win = getCurrentWindow();
     let cleanup: (() => void) | undefined;
 
+    /*
+     * Tauri 2 emits four event types:
+     *   - enter: paths included, cursor entered the window
+     *   - over:  no paths (only cursor position) — they're already known
+     *            from `enter`. We don't need to recompute the overlay state.
+     *   - drop:  paths included again, the user released
+     *   - leave: cursor left without dropping
+     *
+     * We compute the overlay state on `enter` and `drop` only, leaving
+     * `over` as a no-op. This matches the shape of Tauri's discriminated
+     * union and keeps strict TypeScript happy.
+     */
     (async () => {
       const unlisten = await win.onDragDropEvent((event) => {
         const payload = event.payload;
 
-        if (payload.type === 'enter' || payload.type === 'over') {
+        if (payload.type === 'enter') {
           const paths = payload.paths;
           const supported = paths.some(isSupported);
           setState({
@@ -59,9 +71,10 @@ export function useDragAndDrop(): DragDropState {
               }
             })();
           }
-        } else {
+        } else if (payload.type === 'leave') {
           setState({ isDragOver: false, hasSupportedFile: false, message: null });
         }
+        // 'over' has no paths and no state change — we ignore it
       });
 
       cleanup = unlisten;
