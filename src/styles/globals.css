@@ -3,35 +3,46 @@
 @tailwind utilities;
 
 /* ─────────────────────────────────────────────────────────────
-   Design tokens — warm, low-contrast, reading-optimized.
-   Inspired by Claude Desktop's spacious, calm aesthetic.
+   Design tokens
    ───────────────────────────────────────────────────────────── */
 
 @layer base {
   :root {
-    /* Light theme — warm off-white, not pure */
-    --bg: 250 248 244;          /* #FAF8F4 — warm canvas */
-    --surface: 245 242 236;     /* #F5F2EC — sidebars, panels */
-    --elevated: 255 254 251;    /* #FFFEFB — cards, dialogs */
-    --border: 230 225 215;      /* #E6E1D7 — hairline dividers */
-    --text: 38 36 32;           /* #262420 — body text */
-    --muted: 110 105 95;        /* #6E695F — secondary text */
-    --subtle: 165 158 145;      /* #A59E91 — tertiary text */
-    --accent: 199 109 70;       /* #C76D46 — Claude-ish terracotta */
-    --accent-hover: 178 92 56;  /* #B25C38 */
+    /* Light theme */
+    --bg: 250 248 244;
+    --surface: 245 242 236;
+    --elevated: 255 254 251;
+    --border: 230 225 215;
+    --text: 38 36 32;
+    --muted: 110 105 95;
+    --subtle: 165 158 145;
+    --accent: 199 109 70;
+    --accent-hover: 178 92 56;
+    --link: 199 109 70;
+
+    --code-bg: 245 242 236;
+    --code-text: 38 36 32;
+    --code-border: 230 225 215;
+    --code-header-bg: 238 234 226;  /* slightly darker than --code-bg for contrast */
   }
 
   .dark {
-    /* Dark theme — warm dark, not slate-blue */
-    --bg: 28 27 25;             /* #1C1B19 — warm near-black */
-    --surface: 36 34 31;        /* #24221F — panels */
-    --elevated: 45 42 38;       /* #2D2A26 — cards */
-    --border: 58 54 48;         /* #3A3630 — dividers */
-    --text: 235 230 220;        /* #EBE6DC — body text */
-    --muted: 165 158 145;       /* #A59E91 — secondary */
-    --subtle: 115 109 100;      /* #736D64 — tertiary */
-    --accent: 217 130 92;       /* #D9825C — slightly lighter on dark */
-    --accent-hover: 230 145 105; /* #E69169 */
+    /* Dark theme */
+    --bg: 28 27 25;
+    --surface: 36 34 31;
+    --elevated: 45 42 38;
+    --border: 58 54 48;
+    --text: 235 230 220;
+    --muted: 165 158 145;
+    --subtle: 115 109 100;
+    --accent: 217 130 92;
+    --accent-hover: 230 145 105;
+    --link: 232 158 116;
+
+    --code-bg: 22 21 19;
+    --code-text: 220 215 205;
+    --code-border: 50 47 42;
+    --code-header-bg: 32 30 27;     /* slightly lighter than --code-bg */
   }
 
   * {
@@ -52,7 +63,12 @@
     -moz-osx-font-smoothing: grayscale;
   }
 
-  /* Scrollbar styling — thin, unobtrusive */
+  /* Window border — replaces the system shadow we disabled in tauri.conf.json */
+  #root {
+    border: 1px solid rgb(var(--border));
+    box-sizing: border-box;
+  }
+
   ::-webkit-scrollbar {
     width: 10px;
     height: 10px;
@@ -75,17 +91,25 @@
     border: 2px solid transparent;
   }
 
-  /* Focus ring */
   :focus-visible {
     outline: 2px solid rgb(var(--accent));
     outline-offset: 2px;
     border-radius: 4px;
   }
+
+  [data-tauri-drag-region] {
+    -webkit-app-region: drag;
+  }
+  [data-tauri-drag-region] button,
+  [data-tauri-drag-region] [role='button'],
+  [data-tauri-drag-region] input,
+  [data-tauri-drag-region] a {
+    -webkit-app-region: no-drag;
+  }
 }
 
 /* ─────────────────────────────────────────────────────────────
-   Prose styles for rendered markdown.
-   Used by <Renderer /> via the .prose-reader class.
+   Prose styles for rendered markdown
    ───────────────────────────────────────────────────────────── */
 
 @layer components {
@@ -127,11 +151,14 @@
   }
 
   .prose-reader a {
-    @apply text-accent underline decoration-accent/30 underline-offset-2;
+    color: rgb(var(--link));
+    text-decoration: underline;
+    text-decoration-color: rgb(var(--link) / 0.35);
+    text-underline-offset: 2px;
     transition: all 150ms ease;
   }
   .prose-reader a:hover {
-    @apply decoration-accent;
+    text-decoration-color: rgb(var(--link));
   }
 
   .prose-reader strong {
@@ -142,24 +169,96 @@
     @apply italic;
   }
 
+  /* Inline code */
   .prose-reader code {
-    @apply font-mono text-[0.88em] bg-surface px-[0.35em] py-[0.15em] rounded-md text-text;
-    border: 1px solid rgb(var(--border));
+    font-family: var(--font-mono, 'JetBrains Mono', monospace);
+    font-size: 0.88em;
+    background-color: rgb(var(--code-bg));
+    color: rgb(var(--code-text));
+    border: 1px solid rgb(var(--code-border));
+    padding: 0.15em 0.35em;
+    border-radius: 6px;
   }
 
-  .prose-reader pre {
-    @apply font-mono text-[0.88em] bg-surface p-4 rounded-lg overflow-x-auto my-5;
-    border: 1px solid rgb(var(--border));
+  /* Code-block wrapper (added by Renderer.tsx after Shiki highlighting) */
+  .prose-reader .code-block {
+    margin: 1.25rem 0;
+    border: 1px solid rgb(var(--code-border));
+    border-radius: 8px;
+    overflow: hidden;
+    background-color: rgb(var(--code-bg));
+  }
+
+  /* Language label header bar */
+  .prose-reader .code-block-lang {
+    font-family: var(--font-mono, 'JetBrains Mono', monospace);
+    font-size: 0.75em;
+    font-weight: 500;
+    color: rgb(var(--muted));
+    background-color: rgb(var(--code-header-bg));
+    padding: 0.4rem 0.85rem;
+    border-bottom: 1px solid rgb(var(--code-border));
+    letter-spacing: 0.02em;
+    text-transform: lowercase;
+    user-select: none;
+  }
+
+  /* Code block <pre> — reset margins/borders since the wrapper handles them */
+  .prose-reader .code-block pre {
+    font-family: var(--font-mono, 'JetBrains Mono', monospace);
+    font-size: 0.88em;
+    background-color: transparent !important;
+    color: rgb(var(--code-text));
+    border: 0;
+    padding: 1rem;
+    border-radius: 0;
+    overflow-x: auto;
+    margin: 0;
+    line-height: 1.6;
+  }
+
+  .prose-reader .code-block pre.shiki {
+    background-color: transparent !important;
+  }
+
+  .prose-reader .code-block pre code {
+    background: transparent;
+    padding: 0;
+    border: 0;
+    color: inherit;
+    font-size: inherit;
+  }
+
+  /* Fallback for code blocks NOT yet processed by Shiki (raw `<pre><code>`).
+     Same look as the wrapped version, just without the lang label. */
+  .prose-reader > pre,
+  .prose-reader > * > pre:not(.code-block pre) {
+    font-family: var(--font-mono, 'JetBrains Mono', monospace);
+    font-size: 0.88em;
+    background-color: rgb(var(--code-bg)) !important;
+    color: rgb(var(--code-text));
+    border: 1px solid rgb(var(--code-border));
+    padding: 1rem;
+    border-radius: 8px;
+    overflow-x: auto;
+    margin: 1.25rem 0;
     line-height: 1.6;
   }
 
   .prose-reader pre code {
-    @apply bg-transparent p-0 border-0 text-text;
+    background: transparent;
+    padding: 0;
+    border: 0;
+    color: inherit;
     font-size: inherit;
   }
 
   .prose-reader blockquote {
-    @apply border-l-2 border-accent/40 pl-4 italic text-muted my-5;
+    border-left: 2px solid rgb(var(--accent) / 0.4);
+    padding-left: 1rem;
+    font-style: italic;
+    color: rgb(var(--muted));
+    margin: 1.25rem 0;
   }
 
   .prose-reader ul,
@@ -184,45 +283,57 @@
     margin: 0.4em 0;
   }
 
-  /* Task list (GFM) */
   .prose-reader .task-list-item {
     list-style: none;
     margin-left: -1.5em;
   }
   .prose-reader .task-list-item input[type='checkbox'] {
-    @apply mr-2 accent-accent;
+    margin-right: 0.5em;
+    accent-color: rgb(var(--accent));
   }
 
   .prose-reader hr {
-    @apply border-0 border-t border-border my-8;
+    border: 0;
+    border-top: 1px solid rgb(var(--border));
+    margin: 2rem 0;
   }
 
   .prose-reader table {
-    @apply w-full my-5 text-[0.95em];
+    width: 100%;
+    margin: 1.25rem 0;
+    font-size: 0.95em;
     border-collapse: collapse;
   }
 
   .prose-reader th,
   .prose-reader td {
-    @apply border border-border px-3 py-2 text-left;
+    border: 1px solid rgb(var(--border));
+    padding: 0.5rem 0.75rem;
+    text-align: left;
   }
 
   .prose-reader th {
-    @apply bg-surface font-semibold;
+    background-color: rgb(var(--surface));
+    font-weight: 600;
   }
 
   .prose-reader img {
-    @apply max-w-full rounded-lg my-4;
+    max-width: 100%;
+    border-radius: 8px;
+    margin: 1rem 0;
   }
 
-  /* Heading anchor (from markdown-it-anchor) */
   .prose-reader .heading-anchor {
-    @apply opacity-0 ml-2 text-muted no-underline transition-opacity;
+    opacity: 0;
+    margin-left: 0.5rem;
+    color: rgb(var(--muted));
+    text-decoration: none;
+    transition: opacity 150ms ease;
   }
   .prose-reader h1:hover .heading-anchor,
   .prose-reader h2:hover .heading-anchor,
   .prose-reader h3:hover .heading-anchor,
   .prose-reader h4:hover .heading-anchor {
-    @apply opacity-60;
+    opacity: 0.6;
   }
 }

@@ -18,11 +18,13 @@
         "height": 760,
         "minWidth": 640,
         "minHeight": 480,
-        "decorations": true,
+        "decorations": false,
+        "shadow": false,
         "transparent": false,
         "backgroundColor": "#FAF8F4",
         "titleBarStyle": "Overlay",
-        "hiddenTitle": true
+        "hiddenTitle": true,
+        "dragDropEnabled": true
       }
     ],
     "security": {

@@ -45,8 +45,10 @@ async function ensureLanguage(lang: string): Promise<string> {
 }
 
 /**
- * Highlights a code block. Returns HTML <pre>…</pre>.
- * If the language isn't recognised, falls back to plain text.
+ * Highlights a code block. Returns HTML <pre>...</pre>.
+ *
+ * We strip Shiki's `background-color` from <pre> and <code> so our CSS
+ * tokens (--code-bg) take over. Token colors stay as inline styles.
  */
 export async function highlightCode(
   code: string,
@@ -55,8 +57,14 @@ export async function highlightCode(
 ): Promise<string> {
   const hl = await getHighlighter();
   const resolvedLang = lang ? await ensureLanguage(lang) : 'text';
-  return hl.codeToHtml(code, {
+  const html = hl.codeToHtml(code, {
     lang: resolvedLang,
     theme: isDark ? 'github-dark' : 'github-light',
   });
+
+  // Remove Shiki's background-color from the outer <pre> and any inner <code>
+  // so our CSS theme governs the block's surface. Token spans keep their colors.
+  return html
+    .replace(/(<pre[^>]*?style="[^"]*?)background-color:[^;"]+;?/g, '$1')
+    .replace(/(<code[^>]*?style="[^"]*?)background-color:[^;"]+;?/g, '$1');
 }

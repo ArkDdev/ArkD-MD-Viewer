@@ -1,0 +1,131 @@
+import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useFileStore } from '@/store/fileStore';
+import { useUIStore } from '@/store/uiStore';
+import { pickAndOpenFile, saveFile, saveFileAs } from '@/lib/fs/files';
+import {
+  MenuIcon,
+  FileIcon,
+  FolderIcon,
+  SaveIcon,
+  SaveAsIcon,
+  SettingsIcon,
+} from '@/components/ui/Icons';
+
+export function MenuButton() {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onClick = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false);
+    };
+    window.addEventListener('mousedown', onClick);
+    window.addEventListener('keydown', onKey);
+    return () => {
+      window.removeEventListener('mousedown', onClick);
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [open]);
+
+  const handleNew = () => {
+    setOpen(false);
+    useFileStore.getState().reset();
+    useUIStore.getState().setMode('edit');
+  };
+
+  const handleOpen = async () => {
+    setOpen(false);
+    const file = await pickAndOpenFile();
+    if (file) useFileStore.getState().loadFile(file.path, file.content);
+  };
+
+  const handleSave = async () => {
+    setOpen(false);
+    const { filePath, content, markSaved, loadFile } = useFileStore.getState();
+    if (filePath) {
+      await saveFile(filePath, content);
+      markSaved();
+    } else {
+      const newPath = await saveFileAs(content);
+      if (newPath) loadFile(newPath, content);
+    }
+  };
+
+  const handleSaveAs = async () => {
+    setOpen(false);
+    const { content, loadFile } = useFileStore.getState();
+    const newPath = await saveFileAs(content);
+    if (newPath) loadFile(newPath, content);
+  };
+
+  const handleSettings = () => {
+    setOpen(false);
+    useUIStore.getState().openSettings();
+  };
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        aria-label="Menu"
+        className={`flex h-7 w-7 items-center justify-center rounded-md transition-colors duration-150 ${
+          open ? 'bg-surface text-text' : 'text-muted hover:bg-surface hover:text-text'
+        }`}
+      >
+        <MenuIcon />
+      </button>
+
+      {open && (
+        <div className="absolute left-0 top-9 z-50 w-64 overflow-hidden rounded-lg border border-border bg-elevated shadow-elevated">
+          <MenuItem icon={<FileIcon />} label="Новый файл" hint="Ctrl+N" onClick={handleNew} />
+          <MenuItem icon={<FolderIcon />} label="Открыть…" hint="Ctrl+O" onClick={handleOpen} />
+          <MenuDivider />
+          <MenuItem icon={<SaveIcon />} label="Сохранить" hint="Ctrl+S" onClick={handleSave} />
+          <MenuItem
+            icon={<SaveAsIcon />}
+            label="Сохранить как…"
+            hint="Ctrl+Shift+S"
+            onClick={handleSaveAs}
+          />
+          <MenuDivider />
+          <MenuItem icon={<SettingsIcon />} label="Настройки" onClick={handleSettings} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function MenuItem({
+  icon,
+  label,
+  hint,
+  onClick,
+}: {
+  icon: ReactNode;
+  label: string;
+  hint?: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className="flex w-full items-center gap-3 px-3 py-2 text-left text-sm text-text transition-colors hover:bg-surface"
+    >
+      <span className="flex h-5 w-5 shrink-0 items-center justify-center text-muted">{icon}</span>
+      <span className="flex-1 whitespace-nowrap">{label}</span>
+      {hint && (
+        <span className="shrink-0 whitespace-nowrap font-mono text-xs text-subtle">{hint}</span>
+      )}
+    </button>
+  );
+}
+
+function MenuDivider() {
+  return <div className="h-px bg-border" />;
+}

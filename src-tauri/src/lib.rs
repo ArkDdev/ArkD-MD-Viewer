@@ -1,12 +1,16 @@
 use std::fs;
 use std::sync::Mutex;
 use once_cell::sync::Lazy;
-use tauri::{Emitter, Manager};
+use tauri::Manager;
+
+#[cfg(target_os = "macos")]
+use tauri::Emitter;
 
 mod commands;
+mod watcher;
 
-/// Holds the file path passed via CLI arguments at startup, if any.
-/// Read once by the frontend via `get_initial_file`.
+use watcher::WatcherState;
+
 static INITIAL_FILE: Lazy<Mutex<Option<String>>> = Lazy::new(|| Mutex::new(None));
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -22,17 +26,26 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
+        .manage(Mutex::new(WatcherState::new()))
         .invoke_handler(tauri::generate_handler![
             commands::read_text_file,
             commands::write_text_file,
             commands::get_initial_file,
+            commands::start_watching,
+            commands::stop_watching,
         ])
-        .setup(|app| {
-            // macOS-specific: handle "Open with…" while the app is running
+        .setup(|_app| {
+            #[cfg(debug_assertions)]
+            {
+                if let Some(window) = _app.get_webview_window("main") {
+                    window.open_devtools();
+                }
+            }
+
             #[cfg(target_os = "macos")]
             {
-                let app_handle = app.handle().clone();
-                app.listen_any("tauri://file-drop", move |event| {
+                let app_handle = _app.handle().clone();
+                _app.listen_any("tauri://file-drop", move |event| {
                     let _ = app_handle.emit("file-open", event.payload());
                 });
             }
