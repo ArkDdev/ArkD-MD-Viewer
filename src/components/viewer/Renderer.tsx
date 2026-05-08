@@ -6,6 +6,13 @@ import { useUIStore, resolveTheme } from '@/store/uiStore';
 interface RendererProps {
   source: string;
   onScroll?: (e: UIEvent<HTMLDivElement>) => void;
+  /**
+   * Called when the renderer's scroll container mounts (with the element)
+   * or unmounts (with null). Used by App.tsx to bind the reading progress
+   * bar to the right scroller, even after mode switches that swap the
+   * underlying DOM node.
+   */
+  onScrollerReady?: (el: HTMLDivElement | null) => void;
 }
 
 function displayLang(lang: string | undefined): string | null {
@@ -48,7 +55,7 @@ const WIDTH_CLASS = {
 } as const;
 
 export const Renderer = forwardRef<HTMLDivElement, RendererProps>(
-  function Renderer({ source, onScroll }, ref) {
+  function Renderer({ source, onScroll, onScrollerReady }, ref) {
     const {
       readerFontFamily,
       readerFontSize,
@@ -124,8 +131,27 @@ export const Renderer = forwardRef<HTMLDivElement, RendererProps>(
     const lineHeightValue = LINE_HEIGHT_VALUE[readerLineHeight];
     const widthClass = WIDTH_CLASS[readerWidth];
 
+    /*
+     * Merged ref: invoke both the forwarded ref (used by SplitView for sync
+     * scrolling) AND the onScrollerReady callback (used by App.tsx to feed
+     * the reading progress bar). Single DOM element, two consumers.
+     *
+     * The callback fires with the element on mount and with null on unmount,
+     * giving App.tsx a reliable signal across mode switches — unlike a bare
+     * `ref.current` read in a useEffect, which can miss the moment the new
+     * element becomes available.
+     */
+    const setScrollerRef = (el: HTMLDivElement | null) => {
+      if (typeof ref === 'function') {
+        ref(el);
+      } else if (ref) {
+        (ref as React.MutableRefObject<HTMLDivElement | null>).current = el;
+      }
+      onScrollerReady?.(el);
+    };
+
     return (
-      <div ref={ref} onScroll={onScroll} className="h-full overflow-y-auto">
+      <div ref={setScrollerRef} onScroll={onScroll} className="h-full overflow-y-auto">
         <article
           key={theme}
           ref={articleRef}

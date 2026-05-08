@@ -48,3 +48,32 @@ function translate(
   }
   return str;
 }
+
+/**
+ * Russian plural form selector — chooses .one / .few / .many based on
+ * Russian grammar rules. English just uses .one for 1 and .many for everything
+ * else, so the same picker works (with .few falling through to .many).
+ *
+ * Pass a key prefix; the function appends `.one`, `.few`, or `.many` based
+ * on the count, then calls t() with the resolved key and the count as a var.
+ *
+ * Example:
+ *   tPlural('json.items', 5) → t('json.items.many', { count: 5 })
+ *                            → "5 элементов" / "5 items"
+ */
+export function tPlural(keyPrefix: string, count: number): string {
+  const form = pluralForm(useUIStore.getState().language, count);
+  return t(`${keyPrefix}.${form}`, { count });
+}
+
+function pluralForm(lang: Language, count: number): 'one' | 'few' | 'many' {
+  if (lang === 'ru') {
+    const mod10 = count % 10;
+    const mod100 = count % 100;
+    if (mod10 === 1 && mod100 !== 11) return 'one';
+    if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return 'few';
+    return 'many';
+  }
+  // English: count === 1 → "1 item", else "N items"
+  return count === 1 ? 'one' : 'many';
+}

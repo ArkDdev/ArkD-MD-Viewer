@@ -1,20 +1,12 @@
 import { create } from 'zustand';
 import { t } from '@/lib/i18n/useT';
+import { detectFileType, type FileCategory } from '@/lib/fs/fileType';
 
 export interface LoadFileOptions {
   /**
    * When true, the UI mode should reset to its default for a fresh open
-   * (i.e. preview for an external file). The store itself doesn't change
-   * the mode — App.tsx watches for `loadFile` calls with `resetMode: true`
-   * and switches the mode accordingly.
-   *
-   * Why this lives in the store and not as a prop on the caller: the watcher
-   * also calls loadFile (when an external change is silently reloaded), and
-   * we DON'T want a mode reset in that case — the user might be editing.
-   * So callers pass `resetMode: true` only when it's a true "open" event:
-   *   • menu Open command
-   *   • drag & drop
-   *   • file association launch
+   * (i.e. view for any file). App.tsx watches for `loadFile` calls with
+   * `resetMode: true` and switches the mode accordingly.
    *
    * The watcher and the welcome-doc init both pass `false` (the default).
    */
@@ -28,27 +20,26 @@ interface FileState {
   isDirty: boolean;
 
   /**
+   * Detected from the file's extension on every load. For the welcome doc
+   * and any unnamed buffer we use 'markdown' (sensible default — the user
+   * almost certainly wants to write markdown when starting fresh).
+   */
+  category: FileCategory;
+
+  /**
    * Counter that increments on every loadFile / reset call. App.tsx
-   * subscribes to it (with the loadFile options) to react to "fresh open"
-   * events without ambiguity. Plain content/path subscriptions can't tell
-   * apart a real reload from a watcher silent reload.
+   * subscribes to it to react to "fresh open" events.
    */
   loadGeneration: number;
-  /** Options from the most recent loadFile / reset call. */
   lastLoadOptions: LoadFileOptions & { kind: 'load' | 'reset' | 'init' };
 
   setContent: (content: string) => void;
   loadFile: (path: string, content: string, options?: LoadFileOptions) => void;
   markSaved: () => void;
-  /** Empty buffer, no path, dirty=false, mode hint = 'reset' for App to switch to edit. */
+  /** Empty buffer, no path, category=markdown (for the New File flow). */
   reset: () => void;
 }
 
-/**
- * Welcome doc is read fresh from translations every time we need it.
- * Used only for the very first launch — `reset()` (i.e. "New file") gives
- * an empty buffer, not the welcome screen.
- */
 function welcomeDoc(): string {
   return t('welcome.doc');
 }
@@ -60,6 +51,7 @@ export const useFileStore = create<FileState>((set) => {
     content: initial,
     originalContent: initial,
     isDirty: false,
+    category: 'markdown',
     loadGeneration: 0,
     lastLoadOptions: { kind: 'init' },
 
@@ -75,6 +67,7 @@ export const useFileStore = create<FileState>((set) => {
         content,
         originalContent: content,
         isDirty: false,
+        category: detectFileType(path),
         loadGeneration: state.loadGeneration + 1,
         lastLoadOptions: { ...options, kind: 'load' },
       })),
@@ -91,6 +84,7 @@ export const useFileStore = create<FileState>((set) => {
         content: '',
         originalContent: '',
         isDirty: false,
+        category: 'markdown',
         loadGeneration: state.loadGeneration + 1,
         lastLoadOptions: { kind: 'reset' },
       })),

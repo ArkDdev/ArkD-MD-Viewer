@@ -87,11 +87,39 @@ const ru: Dict = {
   'conflict.reload': 'Загрузить обновлённый файл',
   'conflict.keep': 'Оставить мои изменения',
 
+  // ── Unsaved changes guard ───────────────────────────────────
+  'unsaved.title': 'Несохранённые изменения',
+  'unsaved.description.named':
+    'Файл «{name}» содержит несохранённые изменения. Что сделать?',
+  'unsaved.description.unnamed':
+    'Документ содержит несохранённые изменения. Что сделать?',
+  'unsaved.save': 'Сохранить',
+  'unsaved.discard': 'Не сохранять',
+  'unsaved.cancel': 'Отмена',
+
+  // ── JSON tree viewer ────────────────────────────────────────
+  'json.invalid': 'Невалидный JSON',
+  'json.invalid.hint':
+    'Документ не удаётся разобрать как JSON. Переключитесь в режим редактирования, чтобы увидеть текст и исправить ошибку.',
+  'json.invalid.editButton': 'Перейти в редактирование',
+  'json.expandAll': 'Развернуть всё',
+  'json.collapseAll': 'Свернуть всё',
+  'json.empty.array': 'пустой массив',
+  'json.empty.object': 'пустой объект',
+  'json.items.one': '{count} элемент',
+  'json.items.few': '{count} элемента',
+  'json.items.many': '{count} элементов',
+
+  // ── Mode indicator (for non-markdown files) ────────────────
+  'mode.readonly': 'Только просмотр',
+  'mode.editing': 'Редактирование',
+
   // ── Drag & drop overlay ─────────────────────────────────────
   'dragdrop.openOne': 'Открыть файл',
   'dragdrop.openFirstOf': 'Открыть первый из {count} файлов',
-  'dragdrop.unsupported': 'Поддерживаются только .md, .markdown, .mdx, .mkd',
-  'dragdrop.unsupportedHint': 'Перетащите файл с расширением .md или .markdown',
+  'dragdrop.unsupported': 'Этот формат файла не поддерживается',
+  'dragdrop.unsupportedHint':
+    'Поддерживаются: .md, .txt, .json, .yaml, .toml, .ini, .xml, .log, .csv и др.',
 
   // ── File / window ───────────────────────────────────────────
   'file.untitled': 'Без названия',
@@ -192,11 +220,39 @@ const en: Dict = {
   'conflict.reload': 'Load updated file',
   'conflict.keep': 'Keep my edits',
 
+  // ── Unsaved changes guard ───────────────────────────────────
+  'unsaved.title': 'Unsaved changes',
+  'unsaved.description.named':
+    'The file "{name}" has unsaved changes. What would you like to do?',
+  'unsaved.description.unnamed':
+    'This document has unsaved changes. What would you like to do?',
+  'unsaved.save': 'Save',
+  'unsaved.discard': 'Don\'t save',
+  'unsaved.cancel': 'Cancel',
+
+  // ── JSON tree viewer ────────────────────────────────────────
+  'json.invalid': 'Invalid JSON',
+  'json.invalid.hint':
+    'This document cannot be parsed as JSON. Switch to edit mode to see the raw text and fix the error.',
+  'json.invalid.editButton': 'Switch to edit mode',
+  'json.expandAll': 'Expand all',
+  'json.collapseAll': 'Collapse all',
+  'json.empty.array': 'empty array',
+  'json.empty.object': 'empty object',
+  'json.items.one': '{count} item',
+  'json.items.few': '{count} items',
+  'json.items.many': '{count} items',
+
+  // ── Mode indicator (for non-markdown files) ────────────────
+  'mode.readonly': 'Read only',
+  'mode.editing': 'Editing',
+
   // ── Drag & drop overlay ─────────────────────────────────────
   'dragdrop.openOne': 'Open file',
   'dragdrop.openFirstOf': 'Open first of {count} files',
-  'dragdrop.unsupported': 'Only .md, .markdown, .mdx, .mkd are supported',
-  'dragdrop.unsupportedHint': 'Drop a file with .md or .markdown extension',
+  'dragdrop.unsupported': 'This file type is not supported',
+  'dragdrop.unsupportedHint':
+    'Supported: .md, .txt, .json, .yaml, .toml, .ini, .xml, .log, .csv, etc.',
 
   // ── File / window ───────────────────────────────────────────
   'file.untitled': 'Untitled',

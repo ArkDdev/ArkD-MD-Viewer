@@ -1,30 +1,33 @@
 import { useEffect, useState } from 'react';
 
 interface ReadingProgressBarProps {
-  /**
-   * The scroll container to track. Pass `null` if there isn't one currently
-   * (e.g. mode just switched and ref isn't ready yet) — the rail still shows
-   * but the fill stays at 0 so the chrome doesn't reflow.
-   */
   target: HTMLElement | null;
+  /**
+   * When true, the bar is filled 100% with accent colour to act as a clear
+   * "you are editing" indicator. The reading-progress semantics don't apply
+   * during editing (the user is writing, not reading sequentially), so
+   * repurposing the bar as a mode indicator keeps the chrome minimal —
+   * one persistent UI element with two states, instead of two separate
+   * strips for the same vertical space.
+   */
+  isEditing?: boolean;
 }
 
 /**
- * A 2px tall progress bar pinned just below the TopBar that fills with the
- * accent colour as the user scrolls through the document.
+ * A 2px tall progress bar pinned just below the TopBar.
  *
- * Kept always-visible (with a faint rail background) so that toggling between
- * a short and a long document doesn't shift the layout below it. If we hid
- * the bar for short docs and re-mounted it when content grew, the main area
- * would jump 2px every time and feel jittery.
+ * Two modes:
+ *   - reading (default) — fills with the scroll progress of `target`
+ *   - editing           — fills 100% with accent, ignoring target
  *
- * The transform-based fill avoids a layout reflow on every scroll event.
+ * Always rendered with a faint rail so the layout doesn't shift when
+ * the document length changes or the mode flips.
  */
-export function ReadingProgressBar({ target }: ReadingProgressBarProps) {
+export function ReadingProgressBar({ target, isEditing = false }: ReadingProgressBarProps) {
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
-    if (!target) {
+    if (isEditing || !target) {
       setProgress(0);
       return;
     }
@@ -36,17 +39,12 @@ export function ReadingProgressBar({ target }: ReadingProgressBarProps) {
         return;
       }
       const ratio = target.scrollTop / max;
-      // Clamp; on some browsers scrollTop can momentarily overshoot during
-      // overscroll (touch/trackpad).
       setProgress(Math.max(0, Math.min(1, ratio)));
     };
 
     compute();
     target.addEventListener('scroll', compute, { passive: true });
 
-    // Recompute when content size changes (font/width settings, mode toggles
-    // inside the same scroller, document loaded). Without this the bar would
-    // lag until the user manually scrolled.
     const resizeObserver = new ResizeObserver(compute);
     resizeObserver.observe(target);
 
@@ -54,7 +52,12 @@ export function ReadingProgressBar({ target }: ReadingProgressBarProps) {
       target.removeEventListener('scroll', compute);
       resizeObserver.disconnect();
     };
-  }, [target]);
+  }, [target, isEditing]);
+
+  // In edit mode we override the width to 100% with no transition delay,
+  // so the switch from reading-progress to "full bar" feels instant rather
+  // than animating from 30%-progress up to 100%.
+  const widthPercent = isEditing ? 100 : progress * 100;
 
   return (
     <div
@@ -62,8 +65,10 @@ export function ReadingProgressBar({ target }: ReadingProgressBarProps) {
       aria-hidden="true"
     >
       <div
-        className="absolute inset-y-0 left-0 bg-accent transition-[width] duration-100 ease-out"
-        style={{ width: `${progress * 100}%` }}
+        className={`absolute inset-y-0 left-0 bg-accent ${
+          isEditing ? '' : 'transition-[width] duration-100 ease-out'
+        }`}
+        style={{ width: `${widthPercent}%` }}
       />
     </div>
   );

@@ -1,7 +1,9 @@
 import { useFileStore } from '@/store/fileStore';
 import { useUIStore, resolveTheme } from '@/store/uiStore';
 import { useT } from '@/lib/i18n/useT';
+import { isMarkdown } from '@/lib/fs/fileType';
 import { MenuButton } from './MenuButton';
+import { ModeBadge } from './ModeBadge';
 import { WindowControls } from './WindowControls';
 import {
   SunIcon,
@@ -11,8 +13,25 @@ import {
   SlidersIcon,
 } from '@/components/ui/Icons';
 
+/**
+ * Top chrome bar.
+ *
+ * Layout uses a 3-column CSS grid: `[auto | 1fr | auto]`. Left and right
+ * cells size to their content; the middle cell takes whatever's left.
+ * The file name is text-centred inside that middle cell, which places it
+ * visually halfway between whatever sits on the left (burger, optional
+ * mode badge) and whatever sits on the right (theme buttons, display,
+ * edit toggle, window controls).
+ *
+ * Why this pattern, not `[1fr | auto | 1fr]`: the latter centres the
+ * filename relative to the entire window width, which means a wide
+ * filename can collide with content on whichever side has more buttons.
+ * Centring inside the remaining space between two auto-sized clusters
+ * is what feels natural to users — the title sits exactly between the
+ * "stuff on the left" and "stuff on the right".
+ */
 export function TopBar() {
-  const { filePath, isDirty } = useFileStore();
+  const { filePath, isDirty, category } = useFileStore();
   const { mode, themeOverride, setTheme, toggleEdit, openDisplay } = useUIStore();
   const t = useT();
 
@@ -22,22 +41,29 @@ export function TopBar() {
 
   const isEditing = mode === 'edit' || mode === 'edit-full';
   const effectiveTheme = resolveTheme(themeOverride);
+  const isMd = isMarkdown(category);
 
   return (
     <div
       data-tauri-drag-region
-      className="relative flex h-10 shrink-0 items-stretch border-b border-border bg-bg select-none"
+      className="grid h-10 shrink-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center border-b border-border bg-bg select-none"
     >
-      <div className="flex items-center gap-1 px-2" data-tauri-drag-region>
+      {/* Left zone — burger + mode badge (only for non-md). Auto-width so
+          the centre zone gets all remaining space. `h-full` mirrors the
+          right zone — both sidebars take the full TopBar height, content
+          inside centres vertically. */}
+      <div className="flex h-full items-center gap-1.5 pl-2" data-tauri-drag-region>
         <MenuButton />
+        {!isMd && <ModeBadge isEditing={isEditing} />}
       </div>
 
-      <div
-        data-tauri-drag-region
-        className="pointer-events-none absolute inset-x-0 top-0 flex h-10 items-center justify-center px-40"
-      >
+      {/* Centre zone — file name, takes whatever space is left between the
+          left and right zones. The name is text-centered inside this zone,
+          which puts it visually halfway between whatever's on the left and
+          whatever's on the right, regardless of how wide either side is. */}
+      <div className="flex h-full min-w-0 items-center px-4" data-tauri-drag-region>
         <span
-          className="truncate text-xs text-muted"
+          className="block w-full truncate text-xs text-muted"
           style={{
             direction: 'rtl',
             textAlign: 'center',
@@ -50,32 +76,50 @@ export function TopBar() {
         </span>
       </div>
 
-      <div className="flex-1" data-tauri-drag-region />
+      {/* Right zone — themes, display, edit toggle, window controls.
+          We make the zone `h-full` (full TopBar height = 40px) explicitly,
+          rather than relying on row alignment. Then each child decides how
+          to fill that height:
+            - themes/display/edit group: `items-center` (28px buttons,
+              centred vertically in the 40px row)
+            - WindowControls: own `h-full items-stretch` (40px hot-zone,
+              matching native Windows chrome conventions)
 
-      <div className="flex items-center gap-0.5 px-2" data-tauri-drag-region>
-        <ThemeButton
-          icon={<SunIcon />}
-          isActive={effectiveTheme === 'light'}
-          onClick={() => setTheme('light')}
-          ariaLabel={t('topbar.theme.light')}
-        />
-        <ThemeButton
-          icon={<MoonIcon />}
-          isActive={effectiveTheme === 'dark'}
-          onClick={() => setTheme('dark')}
-          ariaLabel={t('topbar.theme.dark')}
-        />
+          This was previously broken: the zone had `flex items-stretch` but
+          no `h-full`, so its height collapsed to its tallest child (28px),
+          making WindowControls' `h-full` resolve to 28px too. The visible
+          symptom was a narrow hover band in the middle of each window
+          button. With explicit `h-full` here, the 40px is locked in. */}
+      <div className="flex h-full items-stretch justify-end" data-tauri-drag-region>
+        <div className="flex items-center gap-0.5 pr-2">
+          <ThemeButton
+            icon={<SunIcon />}
+            isActive={effectiveTheme === 'light'}
+            onClick={() => setTheme('light')}
+            ariaLabel={t('topbar.theme.light')}
+          />
+          <ThemeButton
+            icon={<MoonIcon />}
+            isActive={effectiveTheme === 'dark'}
+            onClick={() => setTheme('dark')}
+            ariaLabel={t('topbar.theme.dark')}
+          />
 
-        <div className="mx-1 h-4 w-px bg-border" />
+          <div className="mx-1 h-4 w-px bg-border" />
 
-        <ChromeButton onClick={openDisplay} ariaLabel={t('topbar.display')} title={t('topbar.display')}>
-          <SlidersIcon />
-        </ChromeButton>
+          <ChromeButton
+            onClick={openDisplay}
+            ariaLabel={t('topbar.display')}
+            title={t('topbar.display')}
+          >
+            <SlidersIcon />
+          </ChromeButton>
 
-        <EditToggle isEditing={isEditing} onClick={toggleEdit} />
+          <EditToggle isEditing={isEditing} onClick={toggleEdit} />
+        </div>
+
+        <WindowControls />
       </div>
-
-      <WindowControls />
     </div>
   );
 }

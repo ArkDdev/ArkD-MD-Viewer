@@ -1,6 +1,7 @@
 import { useFileStore } from '@/store/fileStore';
 import { useUIStore } from '@/store/uiStore';
 import { pickAndOpenFile, saveFile, saveFileAs } from '@/lib/fs/files';
+import { guardDirtyBuffer } from '@/lib/fs/guard';
 
 /**
  * Registers global keyboard shortcuts. Returns a cleanup function.
@@ -18,32 +19,32 @@ export function registerKeyboardShortcuts(): () => void {
     const mod = e.metaKey || e.ctrlKey;
     if (!mod) return;
 
-    // Ignore shortcuts that originate from inside text input contexts where
-    // they have a different meaning (e.g. Ctrl+A in CodeMirror selects all
-    // text, not "Open"). Our shortcuts (N/O/E/S) don't conflict with stand-
-    // ard editing shortcuts so this isn't strictly needed, but defensive.
-    // Skip: nothing to skip for now.
-
     switch (e.code) {
-      // Ctrl+N — new file
+      // Ctrl+N — new file (with dirty-buffer guard)
       case 'KeyN': {
         if (e.shiftKey) return;
         e.preventDefault();
+        if (!(await guardDirtyBuffer())) return;
         useFileStore.getState().reset();
         useUIStore.getState().setMode('edit');
         return;
       }
 
-      // Ctrl+O — open
+      // Ctrl+O — open (with dirty-buffer guard)
       case 'KeyO': {
         if (e.shiftKey) return;
         e.preventDefault();
+        if (!(await guardDirtyBuffer())) return;
         const file = await pickAndOpenFile();
-        if (file) useFileStore.getState().loadFile(file.path, file.content);
+        if (file) {
+          useFileStore.getState().loadFile(file.path, file.content, {
+            resetMode: true,
+          });
+        }
         return;
       }
 
-      // Ctrl+E — toggle edit/view
+      // Ctrl+E — toggle edit/view (no guard — non-destructive)
       case 'KeyE': {
         if (e.shiftKey) return;
         e.preventDefault();
