@@ -38,3 +38,6 @@ yarn-error.log*
 
 # TypeScript incremental build cache
 *.tsbuildinfo
+
+# Iteration changelogs from Claude — local notes only
+CHANGES.md
