@@ -3,6 +3,15 @@ import { Editor, type EditorHandle } from '@/components/editor/Editor';
 import { Renderer } from '@/components/viewer/Renderer';
 import { useFileStore } from '@/store/fileStore';
 
+interface SplitViewProps {
+  /**
+   * Called when the preview pane's scroll container is mounted (or unmounted,
+   * with `null`). App.tsx uses this to attach the reading progress bar to the
+   * right scroller in split mode.
+   */
+  onPreviewScrollerReady?: (el: HTMLDivElement | null) => void;
+}
+
 /**
  * Split view: editor on the left, preview on the right.
  *
@@ -10,7 +19,7 @@ import { useFileStore } from '@/store/fileStore';
  * `width: 50%` (not just flex-1) — this avoids drift caused by long
  * lines or growing content.
  *
- * Scroll sync is by *percentage* with two safeguards:
+ * Scroll sync is by *percentage* with three safeguards:
  *   1. `scrollLock` — single-tick guard against the A→B→A feedback loop
  *   2. `MIN_DELTA` — ignore reverse syncs smaller than 1px, which prevents
  *      jitter from rounding errors when one pane is much taller than the other
@@ -19,13 +28,21 @@ import { useFileStore } from '@/store/fileStore';
  */
 const MIN_DELTA = 1;
 
-export function SplitView() {
+export function SplitView({ onPreviewScrollerReady }: SplitViewProps) {
   const content = useFileStore((s) => s.content);
 
   const editorRef = useRef<EditorHandle>(null);
   const previewRef = useRef<HTMLDivElement>(null);
   const scrollLock = useRef(false);
   const rafScheduled = useRef(false);
+
+  // Expose the preview scroller to the parent on mount, and tell it to drop
+  // the reference on unmount. The cleanup is critical — without it, App.tsx
+  // would keep tracking a detached node after a mode switch.
+  useEffect(() => {
+    onPreviewScrollerReady?.(previewRef.current);
+    return () => onPreviewScrollerReady?.(null);
+  }, [onPreviewScrollerReady]);
 
   useEffect(() => {
     const editorScroller = editorRef.current?.getScroller();
@@ -92,8 +109,6 @@ export function SplitView() {
 
   return (
     <div className="flex h-full">
-      {/* Force exactly 50% widths via inline style — flex-1 alone can
-          drift when one side has wider content. */}
       <div style={{ width: '50%' }} className="border-r border-border overflow-hidden">
         <Editor ref={editorRef} showPaneToggle isFull={false} />
       </div>

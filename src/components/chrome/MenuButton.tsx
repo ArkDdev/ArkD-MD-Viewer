@@ -37,6 +37,8 @@ export function MenuButton() {
 
   const handleNew = () => {
     setOpen(false);
+    // Reset to empty buffer (handled inside the store) and switch to split
+    // edit mode — the user just asked for a new file, they'll want to type.
     useFileStore.getState().reset();
     useUIStore.getState().setMode('edit');
   };
@@ -44,7 +46,11 @@ export function MenuButton() {
   const handleOpen = async () => {
     setOpen(false);
     const file = await pickAndOpenFile();
-    if (file) useFileStore.getState().loadFile(file.path, file.content);
+    if (file) {
+      // resetMode: true tells App.tsx to switch to view mode after loading,
+      // because opening an .md file is a "read first" action by default.
+      useFileStore.getState().loadFile(file.path, file.content, { resetMode: true });
+    }
   };
 
   const handleSave = async () => {

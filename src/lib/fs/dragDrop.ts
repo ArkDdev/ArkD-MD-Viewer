@@ -65,7 +65,11 @@ export function useDragAndDrop(): DragDropState {
             (async () => {
               try {
                 const file = await readFileByPath(target);
-                useFileStore.getState().loadFile(file.path, file.content);
+                // resetMode: true — dropping a file is a "fresh open" event,
+                // App.tsx will switch back to view mode for .md preview.
+                useFileStore.getState().loadFile(file.path, file.content, {
+                  resetMode: true,
+                });
               } catch (err) {
                 console.error('Failed to open dropped file:', err);
               }
