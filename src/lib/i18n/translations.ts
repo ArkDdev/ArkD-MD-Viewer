@@ -87,6 +87,16 @@ const ru: Dict = {
   'conflict.reload': 'Загрузить обновлённый файл',
   'conflict.keep': 'Оставить мои изменения',
 
+  // ── Unsaved changes guard ───────────────────────────────────
+  'unsaved.title': 'Несохранённые изменения',
+  'unsaved.description.named':
+    'Файл «{name}» содержит несохранённые изменения. Что сделать?',
+  'unsaved.description.unnamed':
+    'Документ содержит несохранённые изменения. Что сделать?',
+  'unsaved.save': 'Сохранить',
+  'unsaved.discard': 'Не сохранять',
+  'unsaved.cancel': 'Отмена',
+
   // ── Drag & drop overlay ─────────────────────────────────────
   'dragdrop.openOne': 'Открыть файл',
   'dragdrop.openFirstOf': 'Открыть первый из {count} файлов',
@@ -191,6 +201,16 @@ const en: Dict = {
   'conflict.question': 'What would you like to do?',
   'conflict.reload': 'Load updated file',
   'conflict.keep': 'Keep my edits',
+
+  // ── Unsaved changes guard ───────────────────────────────────
+  'unsaved.title': 'Unsaved changes',
+  'unsaved.description.named':
+    'The file "{name}" has unsaved changes. What would you like to do?',
+  'unsaved.description.unnamed':
+    'This document has unsaved changes. What would you like to do?',
+  'unsaved.save': 'Save',
+  'unsaved.discard': 'Don\'t save',
+  'unsaved.cancel': 'Cancel',
 
   // ── Drag & drop overlay ─────────────────────────────────────
   'dragdrop.openOne': 'Open file',

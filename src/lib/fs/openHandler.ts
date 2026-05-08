@@ -1,6 +1,7 @@
 import { listen } from '@tauri-apps/api/event';
 import { invoke } from '@tauri-apps/api/core';
 import { readFileByPath } from './files';
+import { guardDirtyBuffer } from './guard';
 import { useFileStore } from '@/store/fileStore';
 
 /**
@@ -9,9 +10,12 @@ import { useFileStore } from '@/store/fileStore';
  * 1. Initial launch — when the OS starts ArkD with a file path argument
  *    (e.g. double-click on a .md file in Finder/Explorer), the Rust side
  *    sends back the path via the `get_initial_file` command.
+ *    NOTE: no guard is needed here — the buffer is the freshly-initialised
+ *    welcome doc, which is never dirty.
  *
  * 2. Subsequent opens — on macOS, opening another .md file while the app
- *    is running fires a `file-open` event from the Rust side.
+ *    is running fires a `file-open` event from the Rust side. THIS path
+ *    needs the guard, because the user might have a dirty buffer.
  */
 export async function initFileOpenListener(): Promise<void> {
   // 1. Initial launch
@@ -29,6 +33,7 @@ export async function initFileOpenListener(): Promise<void> {
 
   // 2. Subsequent opens
   await listen<string>('file-open', async (event) => {
+    if (!(await guardDirtyBuffer())) return;
     try {
       const file = await readFileByPath(event.payload);
       // External "open with" event — same as initial launch, switch to view.

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useFileStore } from '@/store/fileStore';
 import { useUIStore } from '@/store/uiStore';
 import { pickAndOpenFile, saveFile, saveFileAs } from '@/lib/fs/files';
+import { guardDirtyBuffer } from '@/lib/fs/guard';
 import { useT } from '@/lib/i18n/useT';
 import {
   MenuIcon,
@@ -35,8 +36,9 @@ export function MenuButton() {
     };
   }, [open]);
 
-  const handleNew = () => {
+  const handleNew = async () => {
     setOpen(false);
+    if (!(await guardDirtyBuffer())) return;
     // Reset to empty buffer (handled inside the store) and switch to split
     // edit mode — the user just asked for a new file, they'll want to type.
     useFileStore.getState().reset();
@@ -45,6 +47,7 @@ export function MenuButton() {
 
   const handleOpen = async () => {
     setOpen(false);
+    if (!(await guardDirtyBuffer())) return;
     const file = await pickAndOpenFile();
     if (file) {
       // resetMode: true tells App.tsx to switch to view mode after loading,

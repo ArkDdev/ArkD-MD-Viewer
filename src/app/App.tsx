@@ -4,6 +4,7 @@ import { SettingsModal } from '@/components/chrome/SettingsModal';
 import { DisplayModal } from '@/components/chrome/DisplayModal';
 import { DragOverlay } from '@/components/chrome/DragOverlay';
 import { ConflictModal } from '@/components/chrome/ConflictModal';
+import { UnsavedChangesModal } from '@/components/chrome/UnsavedChangesModal';
 import { ReadingProgressBar } from '@/components/chrome/ReadingProgressBar';
 import { Renderer } from '@/components/viewer/Renderer';
 import { SplitView } from '@/components/viewer/SplitView';
@@ -12,6 +13,7 @@ import { useFileStore } from '@/store/fileStore';
 import { useUIStore } from '@/store/uiStore';
 import { registerKeyboardShortcuts } from '@/lib/shortcuts';
 import { initFileOpenListener } from '@/lib/fs/openHandler';
+import { initWindowCloseGuard } from '@/lib/window/closeGuard';
 import { useDragAndDrop } from '@/lib/fs/dragDrop';
 import { useFileWatcher } from '@/lib/fs/fileWatcher';
 import { translations } from '@/lib/i18n/translations';
@@ -37,9 +39,23 @@ export function App() {
   const { conflict, reload, keepLocal } = useFileWatcher();
 
   useEffect(() => {
-    const cleanup = registerKeyboardShortcuts();
+    const cleanupShortcuts = registerKeyboardShortcuts();
     initFileOpenListener();
-    return cleanup;
+
+    /*
+     * Close-request guard. The promise resolves with the cleanup function
+     * once Tauri's listener is attached. We track it via a ref so we can
+     * detach on unmount even though it arrives asynchronously.
+     */
+    let cleanupClose: (() => void) | undefined;
+    initWindowCloseGuard().then((fn) => {
+      cleanupClose = fn;
+    });
+
+    return () => {
+      cleanupShortcuts();
+      cleanupClose?.();
+    };
   }, []);
 
   /*
@@ -146,6 +162,7 @@ export function App() {
         onReload={reload}
         onKeep={keepLocal}
       />
+      <UnsavedChangesModal />
     </div>
   );
 }

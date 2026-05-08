@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { readFileByPath } from '@/lib/fs/files';
+import { guardDirtyBuffer } from '@/lib/fs/guard';
 import { useFileStore } from '@/store/fileStore';
 import { t } from '@/lib/i18n/useT';
 
@@ -63,6 +64,7 @@ export function useDragAndDrop(): DragDropState {
           const target = paths.find(isSupported);
           if (target) {
             (async () => {
+              if (!(await guardDirtyBuffer())) return;
               try {
                 const file = await readFileByPath(target);
                 // resetMode: true — dropping a file is a "fresh open" event,
