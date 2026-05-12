@@ -1,128 +1,117 @@
-# v1.1.8 — Two bugs from v1.1.7
+# v1.2.3 — Hotfix: require() crash + dev mode CMD explanation
 
 ## Что нужно сделать
 
-1. Распакуй архив (6 файлов).
-2. **`npm run tauri:dev`**.
+1. Распакуй архив **поверх v1.2.2** (6 файлов).
+2. **`npm run tauri:dev`** — пересборка только TypeScript, Rust не трогали.
 
-## 1. IP-адреса и версии в INI больше не разваливаются
-
-### Что было
-
-На скриншоте видно: `207.244.199.184` парсился как `207` (синий — number) + `.244.199.184` (зелёный — string).
-
-### Причина
-
-Мой regex для числа:
-```javascript
-/^-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?\b/
-```
-
-Жадно матчит `207.244` как валидное число. Дальше остаётся `.199.184` — это не число, попадает в string fallback. В результате — IP визуально разделён на две части.
-
-### Фикс
-
-Добавил **lookahead** который требует что **после числа** идёт whitespace, comment-маркер (`;`/`#`), или конец строки:
-
-```javascript
-/^-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?(?=\s|[;#]|$)/
-```
-
-Теперь `207.244` **не** матчит как число (потому что после идёт `.`, не whitespace), и весь IP `207.244.199.184` целиком уходит в string fallback. Видится одним зелёным куском.
-
-Это же исправление защищает:
-- Версии (`1.2.3`, `1.77`, `2.0.1`)
-- Даты (`2024-01-15`)
-- Hex-числа в keys (`0x9056578d6819f...`) — они и так не матчили number, но теперь точно
-- Любые "число-точка-не-число" комбинации
-
-### Что эмиттится теперь
-
-- `1049`, `1` (просто число + EOL) → number → синий ✓
-- `207.244.199.184` → string → зелёный ✓ (правильно — это не число)
-- `1.77` (например version = "1.77" — но это в кавычках) → string ✓
-- `1.77` (без кавычек, как в Cargo.toml: `version = 1.77`) → number ✓ (после "1.77" идёт EOL)
-
-### Тот же lookahead в boolean
-
-Тоже поправил — boolean `(?=\s|[;#]|$)` вместо `\b`. Это **более жёсткая** проверка: `truefoo` не сматчит как boolean (потому что после `true` идёт `f`, не whitespace). `\b` бы пропустил.
-
-## 2. Кнопки окна снова растянулись на полную высоту
-
-### Что было хуже
-
-После v1.1.7 кнопки **сместились к верху TopBar** вместо растянутости на полную высоту. Хотя я поставил `items-stretch` на правой зоне.
+## Главное — пустое окно после elevation
 
 ### Корневая причина
 
-CSS flexbox: `items-stretch` означает "растяни детей до **высоты строки**". А высота строки = высота **самого высокого ребёнка** flex-контейнера.
+В `elevation.ts` я написал такой код:
 
-Правая зона имела двух детей:
-- Группа themes/display/edit — `flex items-center` с кнопками `h-7` (28px)
-- WindowControls — `flex h-full items-stretch`
+```typescript
+function detectCategoryFromPath(path: string | null) {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { detectFileType } = require('@/lib/fs/fileType') as typeof import('@/lib/fs/fileType');
+  return detectFileType(path);
+}
+```
 
-Группа themes имеет высоту 28px. WindowControls пытается взять `h-full`, но `h-full` берётся от родителя, **которому никто не дал высоту**. В результате родитель имеет высоту = max(28, 0) = 28px. WindowControls растягивается до 28px (а не 40px TopBar).
+**`require()` не существует в ES modules**. Vite/Tauri используют ES modules в браузере, синхронный CommonJS `require()` там **не определён**. При вызове падает `ReferenceError: require is not defined`.
 
-В v1.1.7 я думал что grid-cell даст контейнеру 40px по высоте, но **`items-stretch` на родителе grid-cell**'а не работает как ожидалось — он растягивает grid-cell вертикально, но **не передаёт** эту высоту в flex-row.
+Когда elevated процесс стартует → useEffect в App.tsx вызывает `applyHydrationState()` → она вызывает `detectCategoryFromPath()` → **ReferenceError** → React fails to render → пустой `<div id="root"></div>`. Это ровно то что ты увидел в DevTools.
+
+Почему я **вообще** использовал `require()`? Я **думал** что есть circular dependency между `elevation.ts` и `fileType.ts` (через i18n или fileStore). На самом деле — нет такой циркуляции. Зря написал хак.
 
 ### Фикс
 
-Поставил **`h-full` явно** на все три grid-зоны (left/centre/right). Теперь:
+Заменил на обычный `import`:
 
-- Правая зона имеет `h-full` (= 40px от родителя TopBar)
-- Внутри неё `items-stretch` корректно растягивает WindowControls до 40px
-- Группа themes остаётся 28px с `items-center` — кнопки вертикально центрируются
-
-```jsx
-{/* было */}
-<div className="flex items-stretch justify-end">
-
-{/* стало */}
-<div className="flex h-full items-stretch justify-end">
+```typescript
+import { detectFileType } from '@/lib/fs/fileType';
+// ...
+category: detectFileType(snapshot.filePath),
 ```
 
-Аналогично для левой и центральной зоны — для согласованности (и чтобы файл-имя по высоте корректно центрировался).
+Прямой ES module import. Никаких runtime require'ов.
 
-### Архитектурный момент про grid и flex height
+### Дополнительный fix: error logging
 
-Это **известная путаница** во flex/grid взаимодействии:
-- Grid даёт детям **width** через `grid-template-columns` автоматически
-- Но **height** ребёнка grid-cell'а **по умолчанию** равна его content
-- `align-items: stretch` (default для grid) делает cell **на всю строку**, но это **косвенно** — внутреннему flex-контейнеру не передаётся
+Добавил **try/catch** вокруг всего startup chain в App.tsx:
 
-Если внутри grid-cell используется flex и нужно чтобы flex знал **точную высоту**, всегда надо ставить **явный `h-full`** на flex-контейнер.
+```typescript
+useEffect(() => {
+  (async () => {
+    try {
+      // elevation startup logic
+    } catch (err) {
+      console.error('[elevation startup]', err);
+    }
+  })();
+}, []);
+```
 
-В моём ментальном чек-листе теперь записано: **flex-контейнер внутри grid-cell → всегда `h-full` если внутри есть `h-full` дети**.
+Это **defense-in-depth**: если в будущем что-то в elevation startup сломается, **остальное приложение не упадёт**. Ошибка попадёт в console.error и в DevTools, но editor отрендерится нормально. Юзер не увидит пустое окно — увидит обычное приложение с просто отсутствующим recovery offer.
 
-## Чек-лист smoke test
+## CMD-окно при UAC
 
-### IP/версии в INI
+Это **ожидаемое поведение dev-режима**, не баг.
 
-- [ ] Открой `MobaXterm.ini` или похожий с IP-адресами
-- [ ] IP типа `207.244.199.184` теперь **одним цветом** (зелёный = string)
-- [ ] Просто число `1049` (без точек) — **синее** (number)
-- [ ] Просто `true`/`false` — фиолетовые
+В `main.rs`:
 
-### Windows кнопки
+```rust
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+```
 
-- [ ] Наведи мышь на минимизировать — серый фон **на всю высоту TopBar** (40px), не только в центре или сверху
-- [ ] Наведи на максимизировать — серый на всю высоту
-- [ ] Наведи на закрыть — **красный** на всю высоту
-- [ ] Кнопки **не смещены ни к верху ни к низу**, центрированы по высоте TopBar
-- [ ] Клик работает по любой точке кнопки
+Атрибут `windows_subsystem = "windows"` **отключает консоль**, но он применяется **только в release** (`cfg_attr(not(debug_assertions), ...)`). В **debug** (то что запускает `npm run tauri:dev`) — атрибут не применяется, exe запускается с консолью.
 
-### TopBar в целом
+Это **специально** — в dev режиме консоль нужна для `println!`, `dbg!` и другого debug output из Rust.
 
-- [ ] Имя файла центрировано вертикально
-- [ ] Бэйдж "Только просмотр" вертикально центрирован
-- [ ] Кнопки тем/display/edit вертикально центрированы
+Когда мы делаем UAC elevation в dev mode, новый процесс — это **тот же debug exe** → консоль появляется. В **release** (`npm run tauri:build`, installed MSI) — консоли не будет.
 
-## Что я обновил в ментальном чек-листе
+### Можно убрать в dev?
 
-После этой пары багов:
+Можно, но **не рекомендую**:
+- Если уберём — потеряем визуальный debug output из Rust в dev
+- В release всё равно консоли нет, продакшн юзер её никогда не увидит
+- Это маленькое неудобство только в dev mode, **только при elevation flow**
 
-1. **Hand-rolled парсеры всегда проверять на edge cases** — IP, версии, даты, негативные числа, exponential notation. Для number-regex использовать lookahead `(?=delimiter)`, не `\b`.
+Если очень захочется — можем добавить условную логику "при elevated startup, скрыть консоль через AllocConsole/FreeConsole APIs". Но это extra Rust код для cosmetic улучшения dev-only сценария. Я бы оставил как есть.
 
-2. **Flex внутри grid требует явного `h-full`** — `items-stretch` не передаёт высоту автоматически, особенно когда соседи имеют разную высоту. Если важна полная высота — ставить `h-full` явно на каждом flex-контейнере.
+## Почему UAC сработал в dev
 
-Это два конкретных принципа которые я буду применять впредь.
+Хорошая новость: elevation flow **архитектурно** работает корректно. UAC promt появился, юзер согласился, новый процесс стартовал, прочитал state file. Просто потом упал на нашем баге с `require()`.
+
+После v1.2.3 — должно работать полностью.
+
+## Что в архиве
+
+- `package.json`, `tauri.conf.json`, `Cargo.toml`, `SettingsModal.tsx` — версии 1.2.3
+- `src/lib/elevation/elevation.ts` — убран `require()`, добавлен прямой import
+- `src/app/App.tsx` — добавлен try/catch в startup chain
+
+## Smoke test после v1.2.3
+
+1. Создай защищённый тестовый файл (как в v1.2.0 changelog)
+2. Открой в ArkD как обычный юзер
+3. Edit, Ctrl+S
+4. Elevation modal → Перезапустить
+5. UAC promt → Yes
+6. **CMD окно появится** — это ОК (dev mode)
+7. **Должно появиться ArkD окно с твоим контентом** — это главное
+8. В TopBar янтарный бейдж "Администратор", в title суффикс
+9. Ctrl+S → файл сохранился
+
+Если **опять** пустое окно — открой DevTools в нём (F12) → Console → пришли мне текст ошибки `[elevation startup]`. Теперь она точно попадёт в console благодаря добавленному catch.
+
+## Урок
+
+**ES modules и CommonJS не смешиваются.** В Vite/Webpack/Rollup всё код — ES modules. `require()` доступен только в Node.js при отсутствии ES module context. В browser — никогда.
+
+Если есть подозрение на circular dependency — лучше **разнести модули** или использовать dynamic `import()` (асинхронный, всегда работает в ES modules), но **не `require()`**.
+
+В моём чек-листе теперь записано: **никогда не пиши `require()` в frontend коде проекта на Vite**. Всегда `import`, при необходимости `import()` (async).
+
+И ещё одно — **обязательно** оборачивать в try/catch любую startup-логику, которая может упасть до того как UI отрендерится. Лучше сломанная фича чем пустой экран.

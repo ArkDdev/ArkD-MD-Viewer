@@ -4,6 +4,7 @@ import { useT } from '@/lib/i18n/useT';
 import { isMarkdown } from '@/lib/fs/fileType';
 import { MenuButton } from './MenuButton';
 import { ModeBadge } from './ModeBadge';
+import { AdminBadge } from './AdminBadge';
 import { WindowControls } from './WindowControls';
 import {
   SunIcon,
@@ -32,7 +33,7 @@ import {
  */
 export function TopBar() {
   const { filePath, isDirty, category } = useFileStore();
-  const { mode, themeOverride, setTheme, toggleEdit, openDisplay } = useUIStore();
+  const { mode, themeOverride, setTheme, toggleEdit, openDisplay, isAdmin } = useUIStore();
   const t = useT();
 
   const fileName = filePath
@@ -43,24 +44,26 @@ export function TopBar() {
   const effectiveTheme = resolveTheme(themeOverride);
   const isMd = isMarkdown(category);
 
+  // Title suffix when running elevated — communicates the elevated state
+  // even when the AdminBadge isn't directly in the user's gaze. Localised
+  // via the same i18n key as the badge so RU/EN stay consistent.
+  const adminSuffix = isAdmin ? ` (${t('elevation.adminBadge')})` : '';
+
   return (
     <div
       data-tauri-drag-region
       className="grid h-10 shrink-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center border-b border-border bg-bg select-none"
     >
-      {/* Left zone — burger + mode badge (only for non-md). Auto-width so
-          the centre zone gets all remaining space. `h-full` mirrors the
-          right zone — both sidebars take the full TopBar height, content
-          inside centres vertically. */}
+      {/* Left zone — burger + mode badge (only for non-md) + admin badge
+          (only when elevated). Auto-width so the centre zone gets all
+          remaining space. */}
       <div className="flex h-full items-center gap-1.5 pl-2" data-tauri-drag-region>
         <MenuButton />
+        {isAdmin && <AdminBadge />}
         {!isMd && <ModeBadge isEditing={isEditing} />}
       </div>
 
-      {/* Centre zone — file name, takes whatever space is left between the
-          left and right zones. The name is text-centered inside this zone,
-          which puts it visually halfway between whatever's on the left and
-          whatever's on the right, regardless of how wide either side is. */}
+      {/* Centre zone — file name + optional admin suffix. */}
       <div className="flex h-full min-w-0 items-center px-4" data-tauri-drag-region>
         <span
           className="block w-full truncate text-xs text-muted"
@@ -69,9 +72,10 @@ export function TopBar() {
             textAlign: 'center',
             unicodeBidi: 'plaintext',
           }}
-          title={filePath ?? fileName}
+          title={(filePath ?? fileName) + adminSuffix}
         >
           {fileName}
+          {adminSuffix}
           {isDirty && <span className="ml-1 text-accent">●</span>}
         </span>
       </div>

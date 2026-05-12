@@ -6,6 +6,11 @@ import { DragOverlay } from '@/components/chrome/DragOverlay';
 import { ConflictModal } from '@/components/chrome/ConflictModal';
 import { UnsavedChangesModal } from '@/components/chrome/UnsavedChangesModal';
 import { ReadingProgressBar } from '@/components/chrome/ReadingProgressBar';
+import {
+  ElevationPromptModal,
+  ElevationUnsupportedModal,
+  ElevationRecoveryModal,
+} from '@/components/chrome/ElevationModals';
 import { Renderer } from '@/components/viewer/Renderer';
 import { SplitView } from '@/components/viewer/SplitView';
 import { JsonTreeViewer } from '@/components/viewer/JsonTreeViewer';
@@ -19,6 +24,13 @@ import { useDragAndDrop } from '@/lib/fs/dragDrop';
 import { useFileWatcher } from '@/lib/fs/fileWatcher';
 import { translations } from '@/lib/i18n/translations';
 import { isMarkdown, isStructured } from '@/lib/fs/fileType';
+import {
+  readElevatedStartupState,
+  readRecoveryState,
+  applyHydrationState,
+  checkIsAdmin,
+  type ElevationStateSnapshot,
+} from '@/lib/elevation/elevation';
 
 export function App() {
   const content = useFileStore((s) => s.content);
@@ -36,8 +48,74 @@ export function App() {
   // pointing at detached DOM nodes after a mode switch.
   const [scrollTarget, setScrollTarget] = useState<HTMLElement | null>(null);
 
+  /**
+   * Snapshot we may need to surface in the recovery modal (orphan state from
+   * a previously declined UAC prompt). Holds the parsed payload so the
+   * modal can render filename / etc. Set once on startup, cleared on
+   * Restore or Discard.
+   */
+  const [recoverySnapshot, setRecoverySnapshot] = useState<ElevationStateSnapshot | null>(null);
+
   const dragState = useDragAndDrop();
   const { conflict, reload, keepLocal } = useFileWatcher();
+
+  /*
+   * Startup elevation flow.
+   *
+   * Three distinct cases, checked in order:
+   *
+   *   1. `--elevated-startup`: this process was launched via UAC. Read the
+   *      state JSON and rehydrate. The original (unelevated) process has
+   *      already exited.
+   *
+   *   2. Orphan state file exists from a previous abandoned attempt (user
+   *      declined UAC). Offer the recovery modal — letting them keep their
+   *      unsaved changes.
+   *
+   *   3. Neither: normal startup. Do nothing here.
+   *
+   * Also independently: probe isAdmin and update the store so the badge /
+   * title suffix render correctly.
+   */
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        // Admin probe — independent of which startup case we're in
+        const admin = await checkIsAdmin();
+        if (cancelled) return;
+        useUIStore.getState().setIsAdmin(admin);
+
+        // Case 1: elevated launch
+        const elevatedState = await readElevatedStartupState();
+        if (cancelled) return;
+        if (elevatedState) {
+          applyHydrationState(elevatedState);
+          // No recovery prompt — this snapshot is being applied immediately,
+          // not deferred. Clear any leftover file so we don't double-prompt
+          // on the next normal launch.
+          return;
+        }
+
+        // Case 2: orphan recovery
+        const recovery = await readRecoveryState();
+        if (cancelled) return;
+        if (recovery) {
+          setRecoverySnapshot(recovery);
+          useUIStore.getState().openElevationRecovery();
+        }
+      } catch (err) {
+        // Never let elevation-startup logic crash the app. Worst case is
+        // user loses recovery offer — but the editor still renders. Log
+        // so we can diagnose if it ever fires.
+        console.error('[elevation startup]', err);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     const cleanupShortcuts = registerKeyboardShortcuts();
@@ -175,6 +253,9 @@ export function App() {
         onKeep={keepLocal}
       />
       <UnsavedChangesModal />
+      <ElevationPromptModal />
+      <ElevationUnsupportedModal />
+      {recoverySnapshot && <ElevationRecoveryModal snapshot={recoverySnapshot} />}
     </div>
   );
 }

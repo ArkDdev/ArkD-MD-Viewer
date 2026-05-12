@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useFileStore } from '@/store/fileStore';
 import { useUIStore } from '@/store/uiStore';
-import { pickAndOpenFile, saveFile, saveFileAs } from '@/lib/fs/files';
+import { pickAndOpenFile, saveFileAs } from '@/lib/fs/files';
+import { saveWithElevationFallback } from '@/lib/fs/saveWithElevation';
 import { guardDirtyBuffer } from '@/lib/fs/guard';
 import { useT } from '@/lib/i18n/useT';
 import {
@@ -60,8 +61,12 @@ export function MenuButton() {
     setOpen(false);
     const { filePath, content, markSaved, loadFile } = useFileStore.getState();
     if (filePath) {
-      await saveFile(filePath, content);
-      markSaved();
+      // Returns 'elevation-requested' if we caught Access denied and opened
+      // the elevation modal — in that case we do NOT call markSaved() here.
+      // The save isn't done yet; either the elevated relaunch will succeed,
+      // or the user will cancel.
+      const result = await saveWithElevationFallback(filePath, content);
+      if (result === 'saved') markSaved();
     } else {
       const newPath = await saveFileAs(content);
       if (newPath) loadFile(newPath, content);

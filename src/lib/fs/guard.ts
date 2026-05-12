@@ -1,5 +1,6 @@
 import { useFileStore } from '@/store/fileStore';
-import { saveFile, saveFileAs } from '@/lib/fs/files';
+import { saveFileAs } from '@/lib/fs/files';
+import { saveWithElevationFallback } from '@/lib/fs/saveWithElevation';
 import { confirmDiscard } from '@/lib/unsavedGuard';
 
 /**
@@ -8,20 +9,13 @@ import { confirmDiscard } from '@/lib/unsavedGuard';
  *
  * Returns true  → caller should proceed with the destructive action
  * Returns false → caller should abort (user picked Cancel, or Save was
- *                 cancelled mid-flow because they cancelled the Save As dialog)
+ *                 cancelled mid-flow because they cancelled the Save As dialog,
+ *                 or elevation was requested but not yet completed)
  *
- * Usage:
- *
- *   const handleNew = async () => {
- *     if (!(await guardDirtyBuffer())) return;
- *     useFileStore.getState().reset();
- *     // ... rest of "new file" flow
- *   };
- *
- * The "save" branch handles both cases:
- *   - File has a path     → write to it directly
- *   - File has no path    → show Save As dialog; if user cancels there,
- *                           we treat it as Cancel for the whole guard
+ * Note on elevation: if saving requires admin rights, `saveWithElevationFallback`
+ * surfaces the elevation prompt and returns 'elevation-requested'. We treat
+ * that as "save did not complete", so the destructive action is aborted —
+ * the user needs to wait for the relaunch (or cancel) and then retry.
  */
 export async function guardDirtyBuffer(): Promise<boolean> {
   const state = useFileStore.getState();
@@ -35,9 +29,13 @@ export async function guardDirtyBuffer(): Promise<boolean> {
   // choice === 'save'
   if (state.filePath) {
     try {
-      await saveFile(state.filePath, state.content);
-      useFileStore.getState().markSaved();
-      return true;
+      const result = await saveWithElevationFallback(state.filePath, state.content);
+      if (result === 'saved') {
+        useFileStore.getState().markSaved();
+        return true;
+      }
+      // Elevation requested — save not complete yet. Abort destructive action.
+      return false;
     } catch (err) {
       console.error('Save failed:', err);
       return false;

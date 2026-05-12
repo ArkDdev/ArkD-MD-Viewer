@@ -1,6 +1,7 @@
 import { useFileStore } from '@/store/fileStore';
 import { useUIStore } from '@/store/uiStore';
-import { pickAndOpenFile, saveFile, saveFileAs } from '@/lib/fs/files';
+import { pickAndOpenFile, saveFileAs } from '@/lib/fs/files';
+import { saveWithElevationFallback } from '@/lib/fs/saveWithElevation';
 import { guardDirtyBuffer } from '@/lib/fs/guard';
 
 /**
@@ -61,8 +62,8 @@ export function registerKeyboardShortcuts(): () => void {
           if (newPath) loadFile(newPath, content);
         } else {
           if (filePath) {
-            await saveFile(filePath, content);
-            markSaved();
+            const result = await saveWithElevationFallback(filePath, content);
+            if (result === 'saved') markSaved();
           } else {
             const newPath = await saveFileAs(content);
             if (newPath) loadFile(newPath, content);

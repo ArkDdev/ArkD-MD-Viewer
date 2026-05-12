@@ -1,0 +1,63 @@
+feat: v1.2.3 — UAC elevation for write-protected files
+
+When saving fails with Access denied (e.g. files in C:\Windows,
+Program Files, hosts), offer to relaunch the app with admin rights,
+preserving the full app state (open file, dirty buffer, UI settings)
+through a state file in %TEMP%/arkd-md-viewer/.
+
+Architecture:
+
+Rust layer:
+- New elevation.rs module with ShellExecuteW(verb=runas) for UAC
+  via windows crate, gated by cfg(target_os = "windows")
+- check_startup_args() called early in run() to detect three cases:
+  --elevated-startup launch (relaunched with admin), orphan state
+  file (recovery candidate from previously declined UAC), or normal
+- is_elevated() probes via TokenElevation API (Win32_Security)
+- Five new Tauri commands: is_admin, request_elevated_restart,
+  consume_elevated_startup_state, consume_elevation_recovery_state,
+  clear_elevation_state
+
+Frontend layer:
+- elevation.ts: buildSnapshot/applyHydrationState for full state
+  serialisation (filePath, content, isDirty, mode, language, theme)
+- saveWithElevation.ts: wraps saveFile, catches Access denied,
+  opens the right modal (Windows: auto-elevation prompt; macOS/
+  Linux: manual-relaunch instructions)
+- Three new modals: ElevationPromptModal, ElevationUnsupportedModal,
+  ElevationRecoveryModal
+- AdminBadge in TopBar (amber shield, only when elevated) +
+  Administrator suffix in title
+
+UX flow on Windows:
+1. User saves a protected file, gets Access denied
+2. Modal: Restart with admin rights? [Cancel] [Restart]
+3. On Restart: state serialised to %TEMP%, ShellExecuteW(runas)
+   launches a new elevated instance, current process exits
+4. UAC prompt; on Yes, new process reads state, restores buffer
+   with isDirty=true, displays admin badge
+5. User Ctrl+S saves successfully
+
+Recovery: if UAC declined, state file stays in %TEMP%. On the next
+normal launch, ArkD detects the orphan and offers to restore the
+unsaved changes through the recovery modal.
+
+Cross-platform: macOS/Linux get an informational dialog instead of
+auto-elevation; no UAC equivalent exists for GUI launches on those
+platforms. Users must relaunch manually as admin/root.
+
+Adds dependencies:
+  @tauri-apps/plugin-process ^2.0.0
+  windows ^0.58 (Rust, target_os=windows only)
+  dirs ^5 (Rust, cross-platform path resolution)
+  tauri-plugin-process ^2 (Rust)
+
+New permissions: process:default, process:allow-exit
+
+Known limitations:
+- Full e2e elevation flow cannot be tested in tauri:dev because
+  Vite dev server dies on app.exit(0) and the elevated process
+  cannot load UI from localhost:1420. Test via tauri:build + MSI.
+- Window title admin suffix shown only in our HTML TopBar
+  (decorations: false, no native title bar to update)
+- isAdmin probed once on startup, not reactive

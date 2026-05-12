@@ -30,6 +30,25 @@ interface UIState {
   isSettingsOpen: boolean;
   isDisplayOpen: boolean;
 
+  /**
+   * Elevation prompt state. Three distinct UI states because each shows
+   * different text and different buttons:
+   *
+   *   - elevationPrompt: Windows access-denied → offer UAC relaunch
+   *   - elevationUnsupported: macOS/Linux access-denied → manual instructions
+   *   - elevationRecovery: leftover state file from a previous declined UAC
+   *
+   * They never overlap in practice (the conditions are mutually exclusive),
+   * so we represent them as independent booleans rather than a single
+   * union — simpler to reason about and to manipulate.
+   */
+  isElevationPromptOpen: boolean;
+  isElevationUnsupportedOpen: boolean;
+  isElevationRecoveryOpen: boolean;
+
+  /** True if this process was launched with admin/root rights. */
+  isAdmin: boolean;
+
   setMode: (mode: ViewMode) => void;
   toggleEdit: () => void;
   togglePreview: () => void;
@@ -53,6 +72,15 @@ interface UIState {
   closeSettings: () => void;
   openDisplay: () => void;
   closeDisplay: () => void;
+
+  openElevationPrompt: () => void;
+  closeElevationPrompt: () => void;
+  openElevationUnsupported: () => void;
+  closeElevationUnsupported: () => void;
+  openElevationRecovery: () => void;
+  closeElevationRecovery: () => void;
+
+  setIsAdmin: (admin: boolean) => void;
 }
 
 function systemTheme(): 'light' | 'dark' {
@@ -87,6 +115,10 @@ export const useUIStore = create<UIState>()(
 
       isSettingsOpen: false,
       isDisplayOpen: false,
+      isElevationPromptOpen: false,
+      isElevationUnsupportedOpen: false,
+      isElevationRecoveryOpen: false,
+      isAdmin: false,
 
       setMode: (mode) => set({ mode }),
 
@@ -127,6 +159,15 @@ export const useUIStore = create<UIState>()(
       closeSettings: () => set({ isSettingsOpen: false }),
       openDisplay: () => set({ isDisplayOpen: true }),
       closeDisplay: () => set({ isDisplayOpen: false }),
+
+      openElevationPrompt: () => set({ isElevationPromptOpen: true }),
+      closeElevationPrompt: () => set({ isElevationPromptOpen: false }),
+      openElevationUnsupported: () => set({ isElevationUnsupportedOpen: true }),
+      closeElevationUnsupported: () => set({ isElevationUnsupportedOpen: false }),
+      openElevationRecovery: () => set({ isElevationRecoveryOpen: true }),
+      closeElevationRecovery: () => set({ isElevationRecoveryOpen: false }),
+
+      setIsAdmin: (admin) => set({ isAdmin: admin }),
     }),
     {
       name: 'arkd-ui',

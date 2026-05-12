@@ -114,6 +114,27 @@ const ru: Dict = {
   'mode.readonly': 'Только просмотр',
   'mode.editing': 'Редактирование',
 
+  // ── Elevation (UAC) flow ───────────────────────────────────
+  'elevation.required.title': 'Требуются права администратора',
+  'elevation.required.body':
+    'Файл «{name}» защищён от записи. ArkD перезапустится с правами администратора и восстановит ваши изменения.',
+  'elevation.required.bodyUnnamed':
+    'Файл защищён от записи. ArkD перезапустится с правами администратора и восстановит ваши изменения.',
+  'elevation.required.restart': 'Перезапустить с правами',
+  'elevation.required.cancel': 'Отмена',
+  'elevation.unsupported.title': 'Файл защищён',
+  'elevation.unsupported.body':
+    'Не удалось сохранить файл — нет прав на запись. Запустите ArkD от имени администратора или сохраните файл в другое место.',
+  'elevation.unsupported.ok': 'Понятно',
+  'elevation.recovery.title': 'Восстановить несохранённую работу?',
+  'elevation.recovery.body':
+    'В прошлой сессии файл «{name}» содержал несохранённые изменения, которые не удалось записать (запуск с правами администратора был отменён). Восстановить эти изменения?',
+  'elevation.recovery.bodyUnnamed':
+    'В прошлой сессии остались несохранённые изменения, которые не удалось записать (запуск с правами администратора был отменён). Восстановить?',
+  'elevation.recovery.restore': 'Восстановить',
+  'elevation.recovery.discard': 'Отказаться',
+  'elevation.adminBadge': 'Администратор',
+
   // ── Drag & drop overlay ─────────────────────────────────────
   'dragdrop.openOne': 'Открыть файл',
   'dragdrop.openFirstOf': 'Открыть первый из {count} файлов',
@@ -246,6 +267,27 @@ const en: Dict = {
   // ── Mode indicator (for non-markdown files) ────────────────
   'mode.readonly': 'Read only',
   'mode.editing': 'Editing',
+
+  // ── Elevation (UAC) flow ───────────────────────────────────
+  'elevation.required.title': 'Administrator rights required',
+  'elevation.required.body':
+    '"{name}" is write-protected. ArkD will restart with administrator rights and restore your changes.',
+  'elevation.required.bodyUnnamed':
+    'This file is write-protected. ArkD will restart with administrator rights and restore your changes.',
+  'elevation.required.restart': 'Restart as admin',
+  'elevation.required.cancel': 'Cancel',
+  'elevation.unsupported.title': 'File is write-protected',
+  'elevation.unsupported.body':
+    'Could not save the file — write permission denied. Re-launch ArkD as administrator (or root) manually, or save the file to a different location.',
+  'elevation.unsupported.ok': 'OK',
+  'elevation.recovery.title': 'Recover unsaved work?',
+  'elevation.recovery.body':
+    'The previous session had unsaved changes to "{name}" that could not be written (administrator launch was cancelled). Restore those changes?',
+  'elevation.recovery.bodyUnnamed':
+    'The previous session had unsaved changes that could not be written (administrator launch was cancelled). Restore them?',
+  'elevation.recovery.restore': 'Restore',
+  'elevation.recovery.discard': 'Discard',
+  'elevation.adminBadge': 'Administrator',
 
   // ── Drag & drop overlay ─────────────────────────────────────
   'dragdrop.openOne': 'Open file',
