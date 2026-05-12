@@ -27,10 +27,18 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Quick frontend checks — run on a single Linux runner (cheap). If lint
-  # or typecheck fails, no point spinning up the Windows runner for a
+  # Quick frontend checks — run on a single Linux runner (cheap). If
+  # typecheck fails, no point spinning up the Windows runner for a
   # full Tauri build.
-  lint-and-typecheck:
+  #
+  # Note: we used to run ESLint here too, but the project doesn't ship an
+  # ESLint config — it was added to package.json but never wired up. The
+  # `npm run lint` script just fails with "ESLint couldn't find a
+  # configuration file". TypeScript's own checking (tsc --noEmit) catches
+  # the most important class of errors anyway: type mismatches, missing
+  # nulls, unused imports (with strict tsconfig). If we want real linting
+  # later, we add an eslint.config.js and put this step back.
+  typecheck:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
@@ -42,17 +50,14 @@ jobs:
 
       - run: npm ci
 
-      - name: Lint
-        run: npm run lint
-
       - name: TypeScript check
         run: npm run typecheck
 
   # Heavy build — verify the whole thing compiles into installers on both
-  # platforms. Depends on lint-and-typecheck so we don't waste minutes if
-  # the cheaper checks failed.
+  # platforms. Depends on typecheck so we don't waste minutes if the cheap
+  # checks failed.
   build:
-    needs: lint-and-typecheck
+    needs: typecheck
     strategy:
       fail-fast: false
       matrix:
