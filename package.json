@@ -1,7 +1,7 @@
 {
   "name": "arkd-md-viewer",
   "private": true,
-  "version": "1.2.5",
+  "version": "1.3.1",
   "description": "ArkD. MD Viewer — fast, lightweight markdown viewer with editing mode",
   "type": "module",
   "scripts": {
