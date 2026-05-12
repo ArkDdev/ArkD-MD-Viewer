@@ -23,9 +23,13 @@ export async function initFileOpenListener(): Promise<void> {
     const initialPath = await invoke<string | null>('get_initial_file');
     if (initialPath) {
       const file = await readFileByPath(initialPath);
-      // Initial launch from file association — user double-clicked an .md
-      // file in Explorer. They want to read it, so switch to view mode.
-      useFileStore.getState().loadFile(file.path, file.content, { resetMode: true });
+      // readFileByPath returns null if the user declined a size/binary
+      // warning. In that case we leave the welcome doc in place.
+      if (file) {
+        // Initial launch from file association — user double-clicked an .md
+        // file in Explorer. They want to read it, so switch to view mode.
+        useFileStore.getState().loadFile(file.path, file.content, { resetMode: true });
+      }
     }
   } catch (err) {
     console.warn('No initial file or failed to read:', err);
@@ -36,6 +40,7 @@ export async function initFileOpenListener(): Promise<void> {
     if (!(await guardDirtyBuffer())) return;
     try {
       const file = await readFileByPath(event.payload);
+      if (!file) return;
       // External "open with" event — same as initial launch, switch to view.
       useFileStore.getState().loadFile(file.path, file.content, { resetMode: true });
     } catch (err) {

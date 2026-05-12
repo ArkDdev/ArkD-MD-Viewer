@@ -1,0 +1,124 @@
+# Build & release ArkD MD Viewer for Windows and Linux.
+#
+# Trigger: pushing a tag matching v*.*.* (e.g. `git tag v1.3.0 && git push --tags`).
+# Result: a GitHub Release is created (as draft) with the built installers attached.
+# You can then edit the release notes and click "Publish" on github.com.
+#
+# Why a tag-based trigger (not push to main): we want explicit control over
+# when a public artifact is produced. Random pushes to main shouldn't spam
+# the Releases page. Tag = "I'm ready to ship this version".
+#
+# Why two jobs in a matrix (not three): macOS deliberately skipped — see
+# v1.3.0 CHANGES.md. It can be added later by adding an entry to the matrix.
+
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  # Required to create a Release and upload artifacts to it.
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      # Don't cancel other platforms if one fails — we still want partial
+      # release assets so users can grab what built successfully.
+      fail-fast: false
+      matrix:
+        include:
+          # Windows: produces .msi and .exe (NSIS) installers.
+          # windows-latest currently points to Windows Server 2022, which
+          # has WiX Toolset preinstalled for MSI builds.
+          - platform: windows-latest
+            target: ''
+            label: windows-x64
+
+          # Linux: produces .AppImage (portable) and .deb (Debian/Ubuntu).
+          # ubuntu-22.04 chosen explicitly (not -latest) for ABI stability;
+          # binaries built on older glibc work on newer systems, but not
+          # vice versa. 22.04 = glibc 2.35, which is conservative enough
+          # to run on most desktop Linux distros from 2022 onwards.
+          - platform: ubuntu-22.04
+            target: ''
+            label: linux-x64
+
+    runs-on: ${{ matrix.platform }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          # Cache npm install so subsequent runs skip downloading deps.
+          cache: 'npm'
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          # `targets` would add cross-compile targets; we don't need that —
+          # each runner builds for its native host.
+          components: ''
+
+      - name: Cache Cargo
+        # Massive time-saver. Rust dependency compilation dominates Tauri
+        # build time (~5-10 minutes uncached). With cache, subsequent
+        # builds are 1-2 minutes.
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+
+      - name: Install Linux build prerequisites
+        # Tauri on Linux needs WebKitGTK and a few X11/glib dev packages
+        # in order to compile. Windows runners come with all needed bits
+        # preinstalled, so this step is Linux-only.
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libappindicator3-dev \
+            librsvg2-dev \
+            patchelf \
+            libssl-dev \
+            build-essential \
+            curl \
+            wget \
+            file
+
+      - name: Install JS dependencies
+        run: npm ci
+
+      - name: Build & publish
+        uses: tauri-apps/tauri-action@v0
+        env:
+          # tauri-action uses this token to create/update the Release.
+          # It's auto-injected by GitHub Actions — we never set it manually.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          # Tag for the release. ${{ github.ref_name }} is the tag we pushed
+          # (e.g. "v1.3.0"). We use it verbatim — no rewriting.
+          tagName: ${{ github.ref_name }}
+          releaseName: 'ArkD MD Viewer ${{ github.ref_name }}'
+          # Body shown on the release page. Keep brief — we'll edit it
+          # manually before publishing if needed.
+          releaseBody: |
+            See CHANGELOG or the commit log for what's new in this release.
+
+            Installers below are produced by GitHub Actions and are NOT
+            code-signed. On first launch:
+            - Windows: SmartScreen will warn. Click "More info" → "Run anyway".
+            - Linux .AppImage: chmod +x and run, or use the .deb on Debian/Ubuntu.
+          # Mark as draft so we can review before going public.
+          releaseDraft: true
+          # Not a prerelease; this is a real release once published.
+          prerelease: false
+          # No special args — Tauri picks the default bundle targets
+          # configured in tauri.conf.json ("targets": "all").
+          args: ''

@@ -4,7 +4,7 @@ import { useUIStore } from '@/store/uiStore';
 import { useT } from '@/lib/i18n/useT';
 import type { Language } from '@/lib/i18n/translations';
 
-const APP_VERSION = '1.2.3';
+const APP_VERSION = '1.3.0';
 const GITHUB_REPO_URL = 'https://github.com/ArkDdev/ArkD-MD-Viewer';
 const GITHUB_RELEASES_URL = `${GITHUB_REPO_URL}/releases`;
 

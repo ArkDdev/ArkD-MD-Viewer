@@ -11,6 +11,42 @@ pub fn read_text_file(path: String) -> Result<String, String> {
     read_file_to_string(&path)
 }
 
+/// Quick metadata + content-sniff for a file. Used by the open flow to
+/// decide whether to warn the user about large or binary files BEFORE
+/// reading the whole content into memory. Returns:
+///   - `size_bytes`: file size on disk
+///   - `looks_binary`: true if the first 8 KB contain any null bytes.
+///     Null bytes are a strong "not text" signal — UTF-8 / UTF-16 text
+///     files never contain raw 0x00, but most binary formats do. The
+///     check is conservative: we'd rather under-warn (let a binary
+///     through) than over-warn (block legitimate UTF-16-BE which has
+///     null bytes in ASCII range) — but in practice UTF-16 isn't
+///     common for hand-edited files, and our app reads as UTF-8 anyway.
+#[tauri::command]
+pub fn probe_file(path: String) -> Result<serde_json::Value, String> {
+    use std::io::Read;
+
+    let meta = std::fs::metadata(&path).map_err(|e| format!("metadata: {}", e))?;
+    let size_bytes = meta.len();
+
+    // Sniff the first 8 KB. Smaller than typical disk block (4 KB on most
+    // filesystems) means one read; larger gives us a representative sample
+    // even for files where the magic header is near the start.
+    let mut head = vec![0u8; 8 * 1024];
+    let read = match std::fs::File::open(&path).and_then(|mut f| f.read(&mut head)) {
+        Ok(n) => n,
+        Err(_) => 0,
+    };
+    head.truncate(read);
+
+    let looks_binary = head.contains(&0u8);
+
+    Ok(serde_json::json!({
+        "sizeBytes": size_bytes,
+        "looksBinary": looks_binary,
+    }))
+}
+
 /// Write a file. If a watcher is active on this same path, pause it before
 /// the write and resume it after a short delay so our own write doesn't
 /// trigger a `file-changed` event back to the UI.

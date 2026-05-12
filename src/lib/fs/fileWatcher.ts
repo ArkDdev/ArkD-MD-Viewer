@@ -64,10 +64,15 @@ export function useFileWatcher(): {
         // Only react if the changed file is the one we have open
         if (fileState.filePath !== changedPath) return;
 
-        // Read fresh content from disk
+        // Read fresh content from disk. readFileByPath returns null if
+        // the user dismissed a size/binary warning — in the watcher
+        // context that should never actually happen (the file is already
+        // open, so we've passed those checks once already), but we still
+        // handle it defensively rather than crashing on .content.
         let freshContent: string;
         try {
           const file = await readFileByPath(changedPath);
+          if (!file) return;
           freshContent = file.content;
         } catch {
           return; // file might be in mid-write; ignore

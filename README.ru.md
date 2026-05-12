@@ -10,12 +10,13 @@
 
   <p>
     <a href="https://github.com/ArkDdev/ArkD-MD-Viewer/releases/latest"><img src="https://img.shields.io/github/v/release/ArkDdev/ArkD-MD-Viewer?label=релиз&color=C76D46" alt="Последний релиз"></a>
+    <a href="https://github.com/ArkDdev/ArkD-MD-Viewer/actions/workflows/ci.yml"><img src="https://github.com/ArkDdev/ArkD-MD-Viewer/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
     <a href="LICENSE"><img src="https://img.shields.io/badge/лицензия-MIT-blue.svg" alt="Лицензия: MIT"></a>
-    <img src="https://img.shields.io/badge/платформа-Windows-lightgrey" alt="Платформа: Windows">
+    <img src="https://img.shields.io/badge/платформы-Windows%20%7C%20Linux-lightgrey" alt="Платформы: Windows | Linux">
   </p>
 
   <p>
-    <a href="https://github.com/ArkDdev/ArkD-MD-Viewer/releases/latest">⬇ Скачать для Windows</a>
+    <a href="https://github.com/ArkDdev/ArkD-MD-Viewer/releases/latest">⬇ Скачать (Windows / Linux)</a>
     ·
     <a href="#возможности">Возможности</a>
     ·

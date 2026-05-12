@@ -1,0 +1,97 @@
+# Continuous integration: verify that the project builds on every PR and
+# on pushes to main. Catches breakage before it hits the Release workflow.
+#
+# Difference from release.yml:
+#   - Triggered by PR / push to main, NOT by tags
+#   - Doesn't create a Release or upload artifacts (only tauri-action's
+#     "publish" step is omitted)
+#   - Runs lint + typecheck before the heavy Tauri build to fail fast
+#
+# Skipped on macOS for the same reason as release.yml (see v1.3.0 notes).
+
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+    # Skip CI runs that come from tag pushes — release.yml already builds
+    # for those, no point doing it twice.
+    tags-ignore: ['v*']
+
+# Cancel any in-progress run for the same branch/PR if a new commit arrives.
+# Stops us from burning Actions minutes on stale code.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Quick frontend checks — run on a single Linux runner (cheap). If lint
+  # or typecheck fails, no point spinning up the Windows runner for a
+  # full Tauri build.
+  lint-and-typecheck:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: TypeScript check
+        run: npm run typecheck
+
+  # Heavy build — verify the whole thing compiles into installers on both
+  # platforms. Depends on lint-and-typecheck so we don't waste minutes if
+  # the cheaper checks failed.
+  build:
+    needs: lint-and-typecheck
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [windows-latest, ubuntu-22.04]
+
+    runs-on: ${{ matrix.platform }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+
+      - name: Install Linux prerequisites
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libappindicator3-dev \
+            librsvg2-dev \
+            patchelf \
+            libssl-dev \
+            build-essential
+
+      - run: npm ci
+
+      - name: Build (no publish)
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        # No `tagName` / `releaseName` here — that's what tells tauri-action
+        # to skip the publish step and just build. Artifacts stay on the
+        # runner and are discarded when the job ends.

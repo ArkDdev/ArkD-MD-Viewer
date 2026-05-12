@@ -1,6 +1,6 @@
 [package]
 name = "arkd-md-viewer"
-version = "1.2.3"
+version = "1.3.0"
 description = "ArkD. MD Viewer — fast, lightweight markdown viewer"
 authors = ["ArkD"]
 edition = "2021"

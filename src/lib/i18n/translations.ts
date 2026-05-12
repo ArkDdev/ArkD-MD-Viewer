@@ -135,6 +135,16 @@ const ru: Dict = {
   'elevation.recovery.discard': 'Отказаться',
   'elevation.adminBadge': 'Администратор',
 
+  // ── Large / binary file warnings ───────────────────────────
+  'largeBinary.large.title': 'Большой файл',
+  'largeBinary.large.body':
+    'Файл занимает {size} МБ. Открытие больших файлов может занять время. Открыть всё равно?',
+  'largeBinary.binary.title': 'Файл выглядит бинарным',
+  'largeBinary.binary.body':
+    'Похоже, это не текстовый файл (содержит нулевые байты). Открыть как текст всё равно?',
+  'largeBinary.open': 'Открыть',
+  'largeBinary.cancel': 'Отмена',
+
   // ── Drag & drop overlay ─────────────────────────────────────
   'dragdrop.openOne': 'Открыть файл',
   'dragdrop.openFirstOf': 'Открыть первый из {count} файлов',
@@ -288,6 +298,16 @@ const en: Dict = {
   'elevation.recovery.restore': 'Restore',
   'elevation.recovery.discard': 'Discard',
   'elevation.adminBadge': 'Administrator',
+
+  // ── Large / binary file warnings ───────────────────────────
+  'largeBinary.large.title': 'Large file',
+  'largeBinary.large.body':
+    'This file is {size} MB. Opening large files may take a while. Open anyway?',
+  'largeBinary.binary.title': 'File looks binary',
+  'largeBinary.binary.body':
+    'This does not appear to be a text file (it contains null bytes). Open as text anyway?',
+  'largeBinary.open': 'Open',
+  'largeBinary.cancel': 'Cancel',
 
   // ── Drag & drop overlay ─────────────────────────────────────
   'dragdrop.openOne': 'Open file',

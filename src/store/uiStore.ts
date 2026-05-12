@@ -14,6 +14,25 @@ export type ReaderWidth = 'narrow' | 'medium' | 'wide' | 'full';
 
 export type EditorFontSize = 12 | 14 | 16 | 18;
 
+/**
+ * Inline data for the "Large or binary file?" modal. When non-null, the
+ * modal is open; the user's choice resolves the embedded promise.
+ *
+ * We use a stored Promise/resolver pair so the call site (in files.ts)
+ * can `await` the user's answer naturally, instead of having to wire
+ * up event listeners or refs. Pattern is the same as confirmDiscard
+ * (unsavedGuard.ts) — modal opens, user clicks, promise resolves,
+ * caller gets boolean.
+ */
+export type LargeOrBinaryPromptKind =
+  | { kind: 'large'; sizeMb: string }
+  | { kind: 'binary' };
+
+interface LargeOrBinaryPromptState {
+  request: LargeOrBinaryPromptKind;
+  resolve: (proceed: boolean) => void;
+}
+
 interface UIState {
   mode: ViewMode;
   themeOverride: ThemeOverride;
@@ -49,6 +68,13 @@ interface UIState {
   /** True if this process was launched with admin/root rights. */
   isAdmin: boolean;
 
+  /**
+   * Active large/binary confirmation prompt, if any. The promise inside
+   * resolves when the user clicks one of the modal's buttons. Cleared
+   * when the modal closes.
+   */
+  largeOrBinaryPrompt: LargeOrBinaryPromptState | null;
+
   setMode: (mode: ViewMode) => void;
   toggleEdit: () => void;
   togglePreview: () => void;
@@ -81,6 +107,14 @@ interface UIState {
   closeElevationRecovery: () => void;
 
   setIsAdmin: (admin: boolean) => void;
+
+  /**
+   * Show the large/binary file confirmation modal and wait for the user
+   * to click Open or Cancel. Returns true to proceed, false to abort.
+   */
+  confirmLargeOrBinary: (req: LargeOrBinaryPromptKind) => Promise<boolean>;
+  /** Internal — called by the modal buttons. */
+  resolveLargeOrBinary: (proceed: boolean) => void;
 }
 
 function systemTheme(): 'light' | 'dark' {
@@ -119,6 +153,7 @@ export const useUIStore = create<UIState>()(
       isElevationUnsupportedOpen: false,
       isElevationRecoveryOpen: false,
       isAdmin: false,
+      largeOrBinaryPrompt: null,
 
       setMode: (mode) => set({ mode }),
 
@@ -168,6 +203,23 @@ export const useUIStore = create<UIState>()(
       closeElevationRecovery: () => set({ isElevationRecoveryOpen: false }),
 
       setIsAdmin: (admin) => set({ isAdmin: admin }),
+
+      confirmLargeOrBinary: (request) =>
+        new Promise<boolean>((resolve) => {
+          // Stash the resolver alongside the request data; the modal's
+          // button handlers call resolveLargeOrBinary, which fishes the
+          // resolver back out and invokes it. We don't reject the promise
+          // — both Cancel and Open are valid resolutions, just with
+          // different boolean values.
+          set({ largeOrBinaryPrompt: { request, resolve } });
+        }),
+
+      resolveLargeOrBinary: (proceed) => {
+        const prompt = get().largeOrBinaryPrompt;
+        if (!prompt) return;
+        prompt.resolve(proceed);
+        set({ largeOrBinaryPrompt: null });
+      },
     }),
     {
       name: 'arkd-ui',

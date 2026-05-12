@@ -10,13 +10,14 @@
 
   <p>
     <a href="https://github.com/ArkDdev/ArkD-MD-Viewer/releases/latest"><img src="https://img.shields.io/github/v/release/ArkDdev/ArkD-MD-Viewer?label=release&color=C76D46" alt="Latest release"></a>
+    <a href="https://github.com/ArkDdev/ArkD-MD-Viewer/actions/workflows/ci.yml"><img src="https://github.com/ArkDdev/ArkD-MD-Viewer/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
     <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT"></a>
-    <img src="https://img.shields.io/badge/platform-Windows-lightgrey" alt="Platform: Windows">
+    <img src="https://img.shields.io/badge/platforms-Windows%20%7C%20Linux-lightgrey" alt="Platforms: Windows | Linux">
     <img src="https://img.shields.io/badge/built%20with-Tauri%202-FFC131" alt="Built with Tauri 2">
   </p>
 
   <p>
-    <a href="https://github.com/ArkDdev/ArkD-MD-Viewer/releases/latest">⬇ Download for Windows</a>
+    <a href="https://github.com/ArkDdev/ArkD-MD-Viewer/releases/latest">⬇ Download (Windows / Linux)</a>
     ·
     <a href="#features">Features</a>
     ·

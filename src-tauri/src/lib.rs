@@ -51,6 +51,7 @@ pub fn run() {
         .manage(Mutex::new(WatcherState::new()))
         .invoke_handler(tauri::generate_handler![
             commands::read_text_file,
+            commands::probe_file,
             commands::write_text_file,
             commands::get_initial_file,
             commands::start_watching,

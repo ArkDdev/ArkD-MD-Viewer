@@ -11,6 +11,7 @@ import {
   ElevationUnsupportedModal,
   ElevationRecoveryModal,
 } from '@/components/chrome/ElevationModals';
+import { LargeOrBinaryModal } from '@/components/chrome/LargeOrBinaryModal';
 import { Renderer } from '@/components/viewer/Renderer';
 import { SplitView } from '@/components/viewer/SplitView';
 import { JsonTreeViewer } from '@/components/viewer/JsonTreeViewer';
@@ -256,6 +257,7 @@ export function App() {
       <ElevationPromptModal />
       <ElevationUnsupportedModal />
       {recoverySnapshot && <ElevationRecoveryModal snapshot={recoverySnapshot} />}
+      <LargeOrBinaryModal />
     </div>
   );
 }
